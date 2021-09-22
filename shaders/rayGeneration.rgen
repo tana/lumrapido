@@ -1,0 +1,32 @@
+#version 460
+#extension GL_EXT_ray_tracing : enable
+
+// Ray generation shader
+
+layout(binding = 0) uniform accelerationStructureEXT tlas;  // Acceleration structure (scene)
+layout(binding = 1, rgba32f) uniform image2D targetImage; // Image to store rendering result
+layout(binding = 2) uniform RayTracingUniform {
+  mat4 invViewMat; // Inverse of view matrix (i.e. transform camera coordinate to world coordinate)
+  mat4 invProjectionMat; // Inverse of projection matrix (i.e. transform normalized device coordinate into camera coordinate)
+} uniforms;
+
+layout(location = 0) rayPayloadEXT vec3 payload;
+
+void main()
+{
+  // Pixel position in normalized device coordinate (-1 <= x,y <= 1)
+  vec2 pixelNDC = 2.0 * vec2(gl_LaunchIDEXT.xy) / vec2(gl_LaunchSizeEXT.xy) - 1.0;
+  // Ray direction in camera coordinate
+  vec4 directionCam = uniforms.invProjectionMat * vec4(pixelNDC, 0.0, 1.0);
+  // Ray direction in world coordinate
+  vec3 direction = (uniforms.invViewMat * directionCam).xyz;
+  // Ray origin (camera position) in world coordinate
+  vec3 origin = (uniforms.invViewMat * vec4(0.0)).xyz;
+
+  float tMin = 0.00001;
+  float tMax = 10000.0;
+
+  traceRayEXT(tlas, gl_RayFlagsOpaqueEXT, 0xFF, 0, 0, 0, origin, tMin, direction, tMax, 0);
+
+  imageStore(targetImage, ivec2(gl_LaunchIDEXT.xy), vec4(payload, 1.0));
+}
