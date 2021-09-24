@@ -17,6 +17,8 @@
 const int SCREEN_WIDTH = 400;
 const int SCREEN_HEIGHT = 225;
 
+const uint32_t SAMPLES_PER_PIXEL = 100;
+
 const int FPS_MEASURE_COUNT = 100;
 
 int main(int argc, char* argv[])
@@ -64,8 +66,10 @@ int main(int argc, char* argv[])
   viewer->addEventHandler(vsg::CloseHandler::create(viewer));
   viewer->addEventHandler(vsg::Trackball::create(camera));
 
-  // Ray generation shader uses inverse of projection and view matrices
+  // Parameters for ray tracing
   auto uniformValue = RayTracingUniformValue::create();
+  uniformValue->value().samplesPerPixel = SAMPLES_PER_PIXEL;
+  // Ray generation shader uses inverse of projection and view matrices
   lookAt->get_inverse(uniformValue->value().invViewMat);
   perspective->get_inverse(uniformValue->value().invProjectionMat);
 
