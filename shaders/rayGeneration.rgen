@@ -17,11 +17,11 @@ void main()
   // Pixel position in normalized device coordinate (-1 <= x,y <= 1)
   vec2 pixelNDC = 2.0 * vec2(gl_LaunchIDEXT.xy) / vec2(gl_LaunchSizeEXT.xy) - 1.0;
   // Ray direction in camera coordinate
-  vec4 directionCam = uniforms.invProjectionMat * vec4(pixelNDC, 0.0, 1.0);
+  vec4 directionCam = uniforms.invProjectionMat * vec4(pixelNDC, 1.0, 1.0);
   // Ray direction in world coordinate
   vec3 direction = (uniforms.invViewMat * directionCam).xyz;
   // Ray origin (camera position) in world coordinate
-  vec3 origin = (uniforms.invViewMat * vec4(0.0)).xyz;
+  vec3 origin = (uniforms.invViewMat * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
 
   float tMin = 0.00001;
   float tMax = 10000.0;
