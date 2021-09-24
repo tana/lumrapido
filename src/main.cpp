@@ -1,5 +1,5 @@
 #include <iostream>
-#include <filesystem>
+#include <chrono>
 #include <vsg/all.h>
 #include <vsgXchange/all.h>
 #include "utils.h"
@@ -16,6 +16,8 @@
 
 const int SCREEN_WIDTH = 400;
 const int SCREEN_HEIGHT = 225;
+
+const int FPS_MEASURE_COUNT = 100;
 
 int main(int argc, char* argv[])
 {
@@ -217,6 +219,10 @@ int main(int argc, char* argv[])
   viewer->assignRecordAndSubmitTaskAndPresentation({ commandGraph });
   viewer->compile();
 
+  // For FPS measurement
+  int counter = 0;
+  auto lastTime = std::chrono::high_resolution_clock::now();
+
   while (viewer->advanceToNextFrame()) {
     viewer->handleEvents();
 
@@ -228,6 +234,16 @@ int main(int argc, char* argv[])
     viewer->update();
     viewer->recordAndSubmit();
     viewer->present();
+
+    // FPS measurement
+    ++counter;
+    if (counter >= FPS_MEASURE_COUNT) {
+      counter = 0;
+      auto elapsed = std::chrono::high_resolution_clock::now() - lastTime;
+      long long fps = std::chrono::seconds(FPS_MEASURE_COUNT) / elapsed;
+      std::cout << fps << " fps" << std::endl;
+      lastTime = std::chrono::high_resolution_clock::now();
+    }
   }
 
   return 0;
