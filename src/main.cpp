@@ -4,12 +4,15 @@
 #include <vsgXchange/all.h>
 #include "utils.h"
 #include "RayTracingUniform.h"
+#include "SceneConversionTraversal.h"
 
 // Real-time ray tracing using Vulkan Ray Tracing extension
 // Based on VSG's vsgraytracing example:
 //  https://github.com/vsg-dev/vsgExamples/blob/master/examples/raytracing/vsgraytracing/vsgraytracing.cpp
 // Ray tracing algorithm and scene are based on "Ray Tracing in One Weekend" (v3.2.3) written by Peter Shirley:
 //  https://raytracing.github.io/books/RayTracingInOneWeekend.html
+// Vulkan-specific designs are based on NVIDIA Vulkan Ray Tracing tutorial:
+//  https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 
 const int SCREEN_WIDTH = 400;
 const int SCREEN_HEIGHT = 225;
@@ -89,10 +92,53 @@ int main(int argc, char* argv[])
 
   auto shaderGroups = vsg::RayTracingShaderGroups{ rayGenerationShaderGroup, missShaderGroup, closestHitShaderGroup };
 
+#if 1
   // Convert scene into acceleration structure for ray tracing
-  vsg::BuildAccelerationStructureTraversal buildAccelStructTraversal(window->getOrCreateDevice());
-  scene->accept(buildAccelStructTraversal);
-  vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas = buildAccelStructTraversal.tlas;
+  SceneConversionTraversal sceneConversionTraversal(window->getOrCreateDevice());
+  scene->accept(sceneConversionTraversal);
+  vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas = sceneConversionTraversal.tlas;
+  vsg::DataList objectInfoList = sceneConversionTraversal.objectInfoList;
+  vsg::DataList indicesList = sceneConversionTraversal.indicesList;
+  vsg::DataList verticesList = sceneConversionTraversal.verticesList;
+  vsg::DataList normalsList = sceneConversionTraversal.normalsList;
+  vsg::DataList texCoordsList = sceneConversionTraversal.texCoordsList;
+#else
+  auto geom = vsg::AccelerationGeometry::create();
+  geom->verts = vsg::vec3Array::create({
+    { -1, -1, -2 },
+    { 1, -1, -2 },
+    { 1, 1, -2 },
+    { -1, 1, -2 }
+  });
+  geom->indices = vsg::ushortArray::create({ 0, 1, 2, 0, 2, 3 });
+  auto blas = vsg::BottomLevelAccelerationStructure::create(device);
+  blas->geometries.push_back(geom);
+  auto instance = vsg::GeometryInstance::create();
+  instance->accelerationStructure = blas;
+  instance->transform = vsg::mat4();
+  auto tlas = vsg::TopLevelAccelerationStructure::create(device);
+  tlas->geometryInstances.push_back(instance);
+
+  auto indicesList = vsg::DataList{ geom->indices };
+  auto verticesList = vsg::DataList{ geom->verts };
+  auto normalsList = vsg::DataList{ vsg::vec3Array::create({
+    { 0, 0, 1 },
+    { 0, 0, 1 },
+    { 0, 0, 1 },
+    { 0, 0, 1 }
+  }) };
+  auto texCoordsList = vsg::DataList{ vsg::vec2Array::create({
+    { 0, 1 },
+    { 1, 1 },
+    { 1, 0 },
+    { 0, 0 }
+  }) };
+
+  auto info = ObjectInfoValue::create();
+  info->value().indexOffset = 0;
+  info->value().vertexOffset = 0;
+  auto objectInfoList = vsg::DataList{ info };
+#endif
 
   // Create a target image for rendering
   auto targetImage = vsg::Image::create();
@@ -121,7 +167,17 @@ int main(int argc, char* argv[])
     // Binding 1 is the target image
     { 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
     // Binding 2 is the uniform buffer
-    { 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr }
+    { 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
+    // Binding 3 is array of ObjectInfo, which contains offsets of indices and vertex attributes
+    { 3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Binding 4 is array of indices of all objects combined
+    { 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Binding 5 is array of vertices of all objects combined
+    { 5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Binding 6 is array of normals of all objects combined
+    { 6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Binding 7 is array of texture coords of all objects combined
+    { 7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr }
   };
   auto descriptorLayout = vsg::DescriptorSetLayout::create(descriptorBindings);
 
@@ -129,7 +185,12 @@ int main(int argc, char* argv[])
   auto tlasDescriptor = vsg::DescriptorAccelerationStructure::create(vsg::AccelerationStructures{ tlas }, 0, 0); // Binding 0, first element of the array
   auto targetImageDescriptor = vsg::DescriptorImage::create(targetImageInfo, 1, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // Binding 1
   auto uniformDescriptor = vsg::DescriptorBuffer::create(uniformValue, 2, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);  // Binding 2
-  auto descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor });
+  auto objectInfoDescriptor = vsg::DescriptorBuffer::create(objectInfoList, 3, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 3
+  auto indicesDescriptor = vsg::DescriptorBuffer::create(indicesList, 4, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 4
+  auto verticesDescriptor = vsg::DescriptorBuffer::create(verticesList, 5, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 5
+  auto normalsDescriptor = vsg::DescriptorBuffer::create(normalsList, 6, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 6
+  auto texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoordsList, 7, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 7
+  auto descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor });
 
   // Create ray tracing pipeline
   auto pipelineLayout = vsg::PipelineLayout::create(vsg::DescriptorSetLayouts{ descriptorLayout }, vsg::PushConstantRanges{});
