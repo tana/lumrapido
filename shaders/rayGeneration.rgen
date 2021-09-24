@@ -54,7 +54,7 @@ float randomFloat(inout RandomState state, float minimum, float maximum)
 void main()
 {
   // Initialize RNG using pixel coord as seed
-  initRandom(payload.randomState, gl_LaunchIDEXT.x ^ gl_LaunchIDEXT.y);
+  initRandom(payload.randomState, (gl_LaunchIDEXT.x << 16) | gl_LaunchIDEXT.y);
 
   vec3 meanColor = vec3(0.0);
 
