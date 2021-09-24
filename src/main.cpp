@@ -29,6 +29,7 @@ int main(int argc, char* argv[])
   auto scene = vsg::Group::create();
   scene->addChild(createSphere(vsg::vec3(0.0f, 0.0f, -1.0f), 0.5f));
   scene->addChild(createSphere(vsg::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+  //scene->addChild(createQuad(vsg::vec3(0.0f, -0.5f, -1.0f), vsg::vec3(0.0f, 1.0f, 0.0f), vsg::vec3(0.0f, 0.0f, -1.0f), 100.0f, 100.0f));
   
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
