@@ -4,6 +4,7 @@
 #include <vsgXchange/all.h>
 #include "utils.h"
 #include "RayTracingUniform.h"
+#include "RayTracingMaterialGroup.h"
 #include "SceneConversionTraversal.h"
 
 // Real-time ray tracing using Vulkan Ray Tracing extension
@@ -25,12 +26,22 @@ int main(int argc, char* argv[])
 {
   auto options = vsg::Options::create(vsgXchange::all::create());
 
+  // Define materials used in the scene
+  RayTracingMaterial groundMaterial;
+  groundMaterial.color = vsg::vec3(0.8f, 0.8f, 0.0f);
+  RayTracingMaterial centerMaterial;
+  centerMaterial.color = vsg::vec3(0.7f, 0.3f, 0.3f);
+
   // Scene to render
   auto scene = vsg::Group::create();
-  scene->addChild(createSphere(vsg::vec3(0.0f, 0.0f, -1.0f), 0.5f));
-  scene->addChild(createSphere(vsg::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+  auto centerGroup = RayTracingMaterialGroup::create(centerMaterial);
+  centerGroup->addChild(createSphere(vsg::vec3(0.0f, 0.0f, -1.0f), 0.5f));
+  scene->addChild(centerGroup);
+  auto groundGroup = RayTracingMaterialGroup::create(groundMaterial);
+  groundGroup->addChild(createSphere(vsg::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+  scene->addChild(groundGroup);
   //scene->addChild(createQuad(vsg::vec3(0.0f, -0.5f, -1.0f), vsg::vec3(0.0f, 1.0f, 0.0f), vsg::vec3(0.0f, 0.0f, -1.0f), 100.0f, 100.0f));
-  
+
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
   windowTraits->swapchainPreferences.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;  // The screen can be target of image-to-image copy
@@ -104,11 +115,11 @@ int main(int argc, char* argv[])
   SceneConversionTraversal sceneConversionTraversal(window->getOrCreateDevice());
   scene->accept(sceneConversionTraversal);
   vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas = sceneConversionTraversal.tlas;
-  vsg::DataList objectInfoList = sceneConversionTraversal.objectInfoList;
-  vsg::DataList indicesList = sceneConversionTraversal.indicesList;
-  vsg::DataList verticesList = sceneConversionTraversal.verticesList;
-  vsg::DataList normalsList = sceneConversionTraversal.normalsList;
-  vsg::DataList texCoordsList = sceneConversionTraversal.texCoordsList;
+  auto objectInfo = sceneConversionTraversal.getObjectInfo();
+  auto indices = sceneConversionTraversal.getIndices();
+  auto vertices = sceneConversionTraversal.getVertices();
+  auto normals = sceneConversionTraversal.getNormals();
+  auto texCoords = sceneConversionTraversal.getTexCoords();
 #else
   auto geom = vsg::AccelerationGeometry::create();
   geom->verts = vsg::vec3Array::create({
@@ -116,7 +127,7 @@ int main(int argc, char* argv[])
     { 1, -1, -2 },
     { 1, 1, -2 },
     { -1, 1, -2 }
-  });
+    });
   geom->indices = vsg::ushortArray::create({ 0, 1, 2, 0, 2, 3 });
   auto blas = vsg::BottomLevelAccelerationStructure::create(device);
   blas->geometries.push_back(geom);
@@ -126,25 +137,25 @@ int main(int argc, char* argv[])
   auto tlas = vsg::TopLevelAccelerationStructure::create(device);
   tlas->geometryInstances.push_back(instance);
 
-  auto indicesList = vsg::DataList{ geom->indices };
-  auto verticesList = vsg::DataList{ geom->verts };
-  auto normalsList = vsg::DataList{ vsg::vec3Array::create({
+  auto indices = geom->indices;
+  auto vertices = geom->verts;
+  auto normals = vsg::vec3Array::create({
     { 0, 0, 1 },
     { 0, 0, 1 },
     { 0, 0, 1 },
     { 0, 0, 1 }
-  }) };
-  auto texCoordsList = vsg::DataList{ vsg::vec2Array::create({
+  });
+  auto texCoords = vsg::vec2Array::create({
     { 0, 1 },
     { 1, 1 },
     { 1, 0 },
     { 0, 0 }
-  }) };
+  });
 
-  auto info = ObjectInfoValue::create();
-  info->value().indexOffset = 0;
-  info->value().vertexOffset = 0;
-  auto objectInfoList = vsg::DataList{ info };
+  auto objectInfo = ObjectInfoValue::create();
+  objectInfo->value().indexOffset = 0;
+  objectInfo->value().vertexOffset = 0;
+  objectInfo->value().material.color = vsg::vec3(1.0f, 0.4f, 0.4f);
 #endif
 
   // Create a target image for rendering
@@ -184,7 +195,7 @@ int main(int argc, char* argv[])
     // Binding 6 is array of normals of all objects combined
     { 6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
     // Binding 7 is array of texture coords of all objects combined
-    { 7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr }
+    { 7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
   };
   auto descriptorLayout = vsg::DescriptorSetLayout::create(descriptorBindings);
 
@@ -192,11 +203,11 @@ int main(int argc, char* argv[])
   auto tlasDescriptor = vsg::DescriptorAccelerationStructure::create(vsg::AccelerationStructures{ tlas }, 0, 0); // Binding 0, first element of the array
   auto targetImageDescriptor = vsg::DescriptorImage::create(targetImageInfo, 1, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // Binding 1
   auto uniformDescriptor = vsg::DescriptorBuffer::create(uniformValue, 2, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);  // Binding 2
-  auto objectInfoDescriptor = vsg::DescriptorBuffer::create(objectInfoList, 3, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 3
-  auto indicesDescriptor = vsg::DescriptorBuffer::create(indicesList, 4, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 4
-  auto verticesDescriptor = vsg::DescriptorBuffer::create(verticesList, 5, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 5
-  auto normalsDescriptor = vsg::DescriptorBuffer::create(normalsList, 6, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 6
-  auto texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoordsList, 7, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 7
+  auto objectInfoDescriptor = vsg::DescriptorBuffer::create(objectInfo, 3, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 3
+  auto indicesDescriptor = vsg::DescriptorBuffer::create(indices, 4, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 4
+  auto verticesDescriptor = vsg::DescriptorBuffer::create(vertices, 5, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 5
+  auto normalsDescriptor = vsg::DescriptorBuffer::create(normals, 6, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 6
+  auto texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoords, 7, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 7
   auto descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor });
 
   // Create ray tracing pipeline

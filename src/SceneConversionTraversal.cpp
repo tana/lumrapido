@@ -2,9 +2,14 @@
 
 #include <cassert>
 #include <cstdint>
+#include <algorithm>
+#include "RayTracingMaterialGroup.h"
+#include "utils.h"
 
 SceneConversionTraversal::SceneConversionTraversal(vsg::Device* device)
-  : device(device), tlas(vsg::TopLevelAccelerationStructure::create(device)), numIndices(0), numVertices(0)
+  : device(device), tlas(vsg::TopLevelAccelerationStructure::create(device)),
+    numIndices(0), numVertices(0),
+    materialStack({ RayTracingMaterial { vsg::vec3(1.0, 1.0, 1.0) } })
 {
 }
 
@@ -28,6 +33,42 @@ void SceneConversionTraversal::apply(vsg::Geometry& geometry)
 void SceneConversionTraversal::apply(vsg::VertexIndexDraw& vertexIndexDraw)
 {
   addMesh(matrixStack.top(), vertexIndexDraw.arrays, vertexIndexDraw.indices);
+}
+
+void SceneConversionTraversal::apply(RayTracingMaterialGroup& rtMatGroup)
+{
+  materialStack.push(rtMatGroup.material);
+
+  rtMatGroup.traverse(*this);
+
+  materialStack.pop();
+}
+
+vsg::ref_ptr<vsg::Array<ObjectInfo>> SceneConversionTraversal::getObjectInfo() const
+{
+  auto arr = vsg::Array<ObjectInfo>::create(objectInfoList.size());
+  std::copy(objectInfoList.begin(), objectInfoList.end(), arr->begin());
+  return arr;
+}
+
+vsg::ref_ptr<vsg::ushortArray> SceneConversionTraversal::getIndices() const
+{
+  return concatArray(indicesList);
+}
+
+vsg::ref_ptr<vsg::vec3Array> SceneConversionTraversal::getVertices() const
+{
+  return concatArray(verticesList);
+}
+
+vsg::ref_ptr<vsg::vec3Array> SceneConversionTraversal::getNormals() const
+{
+  return concatArray(normalsList);
+}
+
+vsg::ref_ptr<vsg::vec2Array> SceneConversionTraversal::getTexCoords() const
+{
+  return concatArray(texCoordsList);
 }
 
 void SceneConversionTraversal::addMesh(vsg::mat4 transform, vsg::DataList attributes, vsg::ref_ptr<vsg::Data> indices)
@@ -58,16 +99,17 @@ void SceneConversionTraversal::addMesh(vsg::mat4 transform, vsg::DataList attrib
   tlas->geometryInstances.push_back(instance);
 
   // Store offset information
-  auto info = ObjectInfoValue::create();
-  info->value().indexOffset = numIndices;
-  info->value().vertexOffset = numVertices;
+  ObjectInfo info;
+  info.indexOffset = numIndices;
+  info.vertexOffset = numVertices;
+  info.material = materialStack.top();
   objectInfoList.push_back(info);
 
   // Store indices and vertex attributes for closest-hit shader
-  indicesList.push_back(indices);
-  verticesList.push_back(vertices);
-  normalsList.push_back(normals);
-  texCoordsList.push_back(texCoords);
+  indicesList.push_back(indices.cast<vsg::ushortArray>());
+  verticesList.push_back(vertices.cast<vsg::vec3Array>());
+  normalsList.push_back(normals.cast<vsg::vec3Array>());
+  texCoordsList.push_back(texCoords.cast<vsg::vec2Array>());
 
   // Count indices and vertex attributes for offsets
   numIndices += uint32_t(indices->valueCount());

@@ -7,9 +7,14 @@
 
 // Closest hit shader
 
+struct Material {
+  vec3 color;
+};
+
 struct ObjectInfo {
   uint indexOffset;
   uint vertexOffset;
+  Material material;
 };
 
 // State for Xorshift random number generator
@@ -84,6 +89,8 @@ void main()
   vec3 normal0 = normals[vertexOffset + idx0];
   vec3 normal1 = normals[vertexOffset + idx1];
   vec3 normal2 = normals[vertexOffset + idx2];
+
+  Material material = objectInfos[gl_InstanceID].material;
   
   // Normal vector in object coordinate (interpolated from barycentric coords)
   vec3 normalObj = (1.0 - uv.x - uv.y) * normal0 + uv.x * normal1 + uv.y * normal2;
@@ -97,6 +104,6 @@ void main()
   payload.nextDirection = normal + normalize(randomPointInUnitSphere(payload.randomState));
   payload.nextOrigin = hitPoint;
   // Signal the caller (ray generation shader) to trace next ray, instead of recursively tracing
-  payload.color *= vec3(0.5);  // TODO: reflectance
+  payload.color *= material.color;
   payload.traceNextRay = true;
 }
