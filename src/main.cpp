@@ -32,15 +32,14 @@ int main(int argc, char* argv[])
   groundMaterial.color = vsg::vec3(0.8f, 0.8f, 0.0f);
   RayTracingMaterial centerMaterial;
   centerMaterial.type = RT_MATERIAL_LAMBERT;
-  centerMaterial.color = vsg::vec3(0.7f, 0.3f, 0.3f);
+  centerMaterial.color = vsg::vec3(0.1f, 0.2f, 0.5f);
   RayTracingMaterial leftMaterial;
-  leftMaterial.type = RT_MATERIAL_METAL;
-  leftMaterial.color = vsg::vec3(0.8f, 0.8f, 0.8f);
-  leftMaterial.fuzz = 0.3f;
+  leftMaterial.type = RT_MATERIAL_DIELECTRIC;
+  leftMaterial.ior = 1.5f;
   RayTracingMaterial rightMaterial;
   rightMaterial.type = RT_MATERIAL_METAL;
   rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
-  rightMaterial.fuzz = 1.0f;
+  rightMaterial.fuzz = 0.0f;
 
   // Scene to render
   auto scene = vsg::Group::create();
@@ -53,6 +52,7 @@ int main(int argc, char* argv[])
   scene->addChild(centerGroup);
   auto leftGroup = RayTracingMaterialGroup::create(leftMaterial);
   leftGroup->addChild(createSphere(vsg::vec3(-1.0f, 0.0f, -1.0f), 0.5f));
+  leftGroup->addChild(createSphere(vsg::vec3(-1.0f, 0.0f, -1.0f), -0.4f));
   scene->addChild(leftGroup);
   auto rightGroup = RayTracingMaterialGroup::create(rightMaterial);
   rightGroup->addChild(createSphere(vsg::vec3(1.0f, 0.0f, -1.0f), 0.5f));
