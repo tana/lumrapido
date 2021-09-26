@@ -5,34 +5,9 @@
 // For layout qualifier "scalar", which aligns vec3 as vec3, not as vec4
 #extension GL_EXT_scalar_block_layout : enable
 
+#include "common.glsl"
+
 // Closest hit shader
-
-const float EPSILON = 0.0001;
-
-const int RT_MATERIAL_LAMBERT = 0;
-const int RT_MATERIAL_METAL = 1;
-const int RT_MATERIAL_DIELECTRIC = 2;
-
-struct Material
-{
-  int type;
-  vec3 color;
-  float fuzz;
-  float ior;
-};
-
-struct ObjectInfo
-{
-  uint indexOffset;
-  uint vertexOffset;
-  Material material;
-};
-
-// State for Xorshift random number generator
-struct RandomState
-{
-  uint x, y, z, w;
-};
 
 layout(binding = 3, scalar) buffer ObjectInfos {
   ObjectInfo objectInfos[];
@@ -50,31 +25,9 @@ layout(binding = 7, scalar) buffer TexCoords {
   vec2 texCoords[];
 };
 
-layout(location = 0) rayPayloadInEXT RayPayload {
-  vec3 color;
-  bool traceNextRay;
-  vec3 nextOrigin;
-  vec3 nextDirection;
-  RandomState randomState;
-} payload;
+layout(location = 0) rayPayloadInEXT RayPayload payload;
 
 hitAttributeEXT vec2 uv;  // Barycentric coordinate of the hit position inside a triangle
-
-// Pseudo-random number using Xorshift (xor128)
-// G. Marsaglia, "Xorshift RNGs", Journal of Statistical Software, vol. 8, no. 14, pp. 1-6, 2003, doi: 10.18637/jss.v008.i14
-uint random(inout RandomState state)
-{
-  uint t = (state.x ^ (state.x << 11));
-  state.x = state.y;
-  state.y = state.z;
-  state.z = state.w;
-  return (state.w = (state.w ^ (state.w >> 19)) ^ (t ^ (t >> 8)));
-}
-
-float randomFloat(inout RandomState state, float minimum, float maximum)
-{
-  return minimum + (float(random(state)) / 4294967296.0) * (maximum - minimum);
-}
 
 // Sample a random point in a sphere with radius of 1
 vec3 randomPointInUnitSphere(inout RandomState state)
@@ -86,11 +39,6 @@ vec3 randomPointInUnitSphere(inout RandomState state)
     // Accept if the point is in a unit sphere
     if (dot(point, point) < 1.0) return point;
   }
-}
-
-bool nearZero(in vec3 v)
-{
-  return (abs(v.x) < EPSILON) && (abs(v.y) < EPSILON) && (abs(v.z) < EPSILON);
 }
 
 // cosTheta = dot(vectorToEye, normal), eta = n1/n2
