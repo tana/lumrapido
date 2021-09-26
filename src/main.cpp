@@ -102,9 +102,9 @@ int main(int argc, char* argv[])
   perspective->get_inverse(uniformValue->value().invProjectionMat);
 
   // Load shaders
-  auto rayGenerationShader = vsg::read_cast<vsg::ShaderStage>("shaders/rayGeneration.rgen", options);
-  auto missShader = vsg::read_cast<vsg::ShaderStage>("shaders/background.rmiss", options);
-  auto closestHitShader = vsg::read_cast<vsg::ShaderStage>("shaders/closestHit.rchit", options);
+  auto rayGenerationShader = vsg::ShaderStage::read(VK_SHADER_STAGE_RAYGEN_BIT_KHR, "main", "shaders/rayGeneration.spv");
+  auto missShader = vsg::ShaderStage::read(VK_SHADER_STAGE_MISS_BIT_KHR, "main", "shaders/miss.spv");
+  auto closestHitShader = vsg::ShaderStage::read(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "main", "shaders/closestHit.spv");
   if (!rayGenerationShader || !missShader || !closestHitShader) {
     std::cout << "Cannot load shaders" << std::endl;
     return -1;
