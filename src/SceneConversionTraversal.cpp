@@ -9,7 +9,7 @@
 SceneConversionTraversal::SceneConversionTraversal(vsg::Device* device)
   : device(device), tlas(vsg::TopLevelAccelerationStructure::create(device)),
     numIndices(0), numVertices(0),
-    materialStack({ RayTracingMaterial { vsg::vec3(1.0, 1.0, 1.0) } })
+    materialStack({ RayTracingMaterial { RT_MATERIAL_LAMBERT, vsg::vec3(1.0, 1.0, 1.0) } })
 {
 }
 

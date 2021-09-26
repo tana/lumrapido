@@ -3,6 +3,8 @@
 
 // Ray generation shader
 
+const int MAX_DEPTH = 10;
+
 // State for Xorshift random number generator
 struct RandomState
 {
@@ -84,6 +86,7 @@ void main()
     vec3 direction = vec3(x, y, -1.0);
 #endif
 
+    int depth = 0;
     payload.color = vec3(1.0);
 
     do {
@@ -94,7 +97,9 @@ void main()
 
       origin = payload.nextOrigin;
       direction = payload.nextDirection;
-    } while (payload.traceNextRay);
+
+      depth++;
+    } while (payload.traceNextRay && depth < MAX_DEPTH);
 
     meanColor = (i * meanColor + payload.color) / (i + 1); 
   }

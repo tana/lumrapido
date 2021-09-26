@@ -1,14 +1,15 @@
 #pragma once
 
 #include <vsg/maths/vec3.h>
-#include <vsg/core/Inherit.h>
-#include <vsg/core/Value.h>
+
+enum RayTracingMaterialType
+{
+  RT_MATERIAL_LAMBERT = 0,
+  RT_MATERIAL_METAL = 1
+};
 
 struct RayTracingMaterial
 {
+  RayTracingMaterialType type;
   vsg::vec3 color;
-};
-
-class RayTracingMaterialValue : public vsg::Inherit<vsg::Value<RayTracingMaterial>, RayTracingMaterialValue>
-{
 };

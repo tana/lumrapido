@@ -7,11 +7,17 @@
 
 // Closest hit shader
 
-struct Material {
+const int RT_MATERIAL_LAMBERT = 0;
+const int RT_MATERIAL_METAL = 1;
+
+struct Material
+{
+  int type;
   vec3 color;
 };
 
-struct ObjectInfo {
+struct ObjectInfo
+{
   uint indexOffset;
   uint vertexOffset;
   Material material;
@@ -100,10 +106,20 @@ void main()
   // Point of intersection
   vec3 hitPoint = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
 
-  // Randomly generate a new ray
-  payload.nextDirection = normal + normalize(randomPointInUnitSphere(payload.randomState));
-  payload.nextOrigin = hitPoint;
-  // Signal the caller (ray generation shader) to trace next ray, instead of recursively tracing
-  payload.color *= material.color;
-  payload.traceNextRay = true;
+  if (material.type == RT_MATERIAL_LAMBERT) {
+    // Randomly generate a new ray
+    payload.nextDirection = normal + normalize(randomPointInUnitSphere(payload.randomState));
+    payload.nextOrigin = hitPoint;
+    // Signal the caller (ray generation shader) to trace next ray, instead of recursively tracing
+    payload.color *= material.color;
+    payload.traceNextRay = true;
+  } else if (material.type == RT_MATERIAL_METAL) {
+    payload.nextDirection = reflect(normalize(gl_WorldRayDirectionEXT), normal);
+    payload.nextOrigin = hitPoint;
+    payload.color *= material.color;
+    payload.traceNextRay = true;
+  } else {  // Unknown material
+    payload.color *= vec3(0.0);
+    payload.traceNextRay = false;
+  }
 }

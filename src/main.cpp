@@ -28,19 +28,33 @@ int main(int argc, char* argv[])
 
   // Define materials used in the scene
   RayTracingMaterial groundMaterial;
+  groundMaterial.type = RT_MATERIAL_LAMBERT;
   groundMaterial.color = vsg::vec3(0.8f, 0.8f, 0.0f);
   RayTracingMaterial centerMaterial;
+  centerMaterial.type = RT_MATERIAL_LAMBERT;
   centerMaterial.color = vsg::vec3(0.7f, 0.3f, 0.3f);
+  RayTracingMaterial leftMaterial;
+  leftMaterial.type = RT_MATERIAL_METAL;
+  leftMaterial.color = vsg::vec3(0.8f, 0.8f, 0.8f);
+  RayTracingMaterial rightMaterial;
+  rightMaterial.type = RT_MATERIAL_METAL;
+  rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
 
   // Scene to render
   auto scene = vsg::Group::create();
+  auto groundGroup = RayTracingMaterialGroup::create(groundMaterial);
+  groundGroup->addChild(createSphere(vsg::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+  //groundGroup->addChild(createQuad(vsg::vec3(0.0f, -0.5f, -1.0f), vsg::vec3(0.0f, 1.0f, 0.0f), vsg::vec3(0.0f, 0.0f, -1.0f), 100.0f, 100.0f));
+  scene->addChild(groundGroup);
   auto centerGroup = RayTracingMaterialGroup::create(centerMaterial);
   centerGroup->addChild(createSphere(vsg::vec3(0.0f, 0.0f, -1.0f), 0.5f));
   scene->addChild(centerGroup);
-  auto groundGroup = RayTracingMaterialGroup::create(groundMaterial);
-  groundGroup->addChild(createSphere(vsg::vec3(0.0f, -100.5f, -1.0f), 100.0f));
-  scene->addChild(groundGroup);
-  //scene->addChild(createQuad(vsg::vec3(0.0f, -0.5f, -1.0f), vsg::vec3(0.0f, 1.0f, 0.0f), vsg::vec3(0.0f, 0.0f, -1.0f), 100.0f, 100.0f));
+  auto leftGroup = RayTracingMaterialGroup::create(leftMaterial);
+  leftGroup->addChild(createSphere(vsg::vec3(-1.0f, 0.0f, -1.0f), 0.5f));
+  scene->addChild(leftGroup);
+  auto rightGroup = RayTracingMaterialGroup::create(rightMaterial);
+  rightGroup->addChild(createSphere(vsg::vec3(1.0f, 0.0f, -1.0f), 0.5f));
+  scene->addChild(rightGroup);
 
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
@@ -155,6 +169,7 @@ int main(int argc, char* argv[])
   auto objectInfo = ObjectInfoValue::create();
   objectInfo->value().indexOffset = 0;
   objectInfo->value().vertexOffset = 0;
+  objectInfo->value().material.type = RT_MATERIAL_LAMBERT;
   objectInfo->value().material.color = vsg::vec3(1.0f, 0.4f, 0.4f);
 #endif
 
