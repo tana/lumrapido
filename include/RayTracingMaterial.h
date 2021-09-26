@@ -12,4 +12,5 @@ struct RayTracingMaterial
 {
   RayTracingMaterialType type;
   vsg::vec3 color;
+  float fuzz;
 };

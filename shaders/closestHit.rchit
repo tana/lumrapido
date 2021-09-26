@@ -14,6 +14,7 @@ struct Material
 {
   int type;
   vec3 color;
+  float fuzz;
 };
 
 struct ObjectInfo
@@ -102,6 +103,10 @@ void main()
   vec3 normalObj = (1.0 - uv.x - uv.y) * normal0 + uv.x * normal1 + uv.y * normal2;
   // Normal vector in world coordinate
   vec3 normal = normalize(gl_ObjectToWorldEXT * vec4(normalObj, 0.0));
+  // Reverse normal vector if the surface is facing back
+  if (gl_HitKindEXT == gl_HitKindBackFacingTriangleEXT) {
+    normal = -normal;
+  }
 
   // Point of intersection
   vec3 hitPoint = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
@@ -114,10 +119,16 @@ void main()
     payload.color *= material.color;
     payload.traceNextRay = true;
   } else if (material.type == RT_MATERIAL_METAL) {
-    payload.nextDirection = reflect(normalize(gl_WorldRayDirectionEXT), normal);
-    payload.nextOrigin = hitPoint;
-    payload.color *= material.color;
-    payload.traceNextRay = true;
+    vec3 reflectedDir = reflect(normalize(gl_WorldRayDirectionEXT), normal) + material.fuzz * randomPointInUnitSphere(payload.randomState);
+    if (dot(reflectedDir, normal) > 0) {
+      payload.nextDirection = reflectedDir;
+      payload.nextOrigin = hitPoint;
+      payload.color *= material.color;
+      payload.traceNextRay = true;
+    } else {  // When the reflected ray goes inside the object
+      payload.color = vec3(0.0);
+      payload.traceNextRay = false;
+    }
   } else {  // Unknown material
     payload.color *= vec3(0.0);
     payload.traceNextRay = false;

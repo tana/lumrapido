@@ -36,9 +36,11 @@ int main(int argc, char* argv[])
   RayTracingMaterial leftMaterial;
   leftMaterial.type = RT_MATERIAL_METAL;
   leftMaterial.color = vsg::vec3(0.8f, 0.8f, 0.8f);
+  leftMaterial.fuzz = 0.3f;
   RayTracingMaterial rightMaterial;
   rightMaterial.type = RT_MATERIAL_METAL;
   rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
+  rightMaterial.fuzz = 1.0f;
 
   // Scene to render
   auto scene = vsg::Group::create();
