@@ -8,6 +8,10 @@
 #include "common.glsl"
 
 // Closest hit shader
+// Implementation of physically based rendering (RT_MATERIAL_PBR) is based on the following papers:
+//  B. Burley, "Physically Based Shading at Disney", in SIGGRAPH 2012 Course: Practical Physically Based Shading in Film and Game production, 2012, https://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
+//  B. Karis, "Real Shading in Unreal Engine 4", in SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice, 2013, https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
+//  C. Schlick, "An Inexpensive BRDF Model for Physically-based Rendering", in Computer Graphics Forum, vol. 13, no. 3, 1994, pp. 233-246.
 
 layout(binding = 3, scalar) buffer ObjectInfos {
   ObjectInfo objectInfos[];
@@ -41,14 +45,36 @@ vec3 randomPointInUnitSphere(inout RandomState state)
   }
 }
 
-// cosTheta = dot(vectorToEye, normal), eta = n1/n2
-float fresnel(in float cosTheta, in float eta)
+// Calculate Fresnel term using Schlick's approximation
+// cosTheta = dot(vectorToEye, normal)
+vec3 fresnelSchlick(in float cosTheta, in vec3 f0)
 {
-  // sqrt(f0) = (n1-n2)/(n1+n2) = (eta-1)/(eta+1)
-  float sqrtF0 = (eta - 1) / (eta + 1);
-  float f0 = sqrtF0 * sqrtF0;
-  // Schlick's approximation
   return f0 + (1 - f0) * pow(1 - cosTheta, 5);
+}
+
+// GGX/Trowbridge-Reitz normal distribution function D(h)
+float normalDistGGX(in vec3 halfwayVec, in vec3 normal, float roughness)
+{
+  float alpha = roughness * roughness;
+  float alphaSq = alpha * alpha;
+  float dotNH = dot(normal, halfwayVec);
+  float ggxTemp = dotNH * dotNH * (alphaSq - 1.0) + 1.0;
+  return alphaSq / (PI * ggxTemp * ggxTemp);
+}
+
+// Schlick GGX Geometric attenuation term G(l,v,h)
+float geometricAttenuationSchlick(in vec3 lightVec, in vec3 viewVec, in vec3 normal, float roughness)
+{
+  // Halfway vector
+  vec3 halfwayVec = normalize(viewVec + lightVec);
+
+  float dotNL = dot(normal, lightVec);
+  float dotNV = dot(normal, viewVec);
+  float alpha = roughness * roughness;
+  float k = alpha / 2.0;
+  float g1L = dotNL / (dotNL * (1.0 - k) + k);
+  float g1V = dotNV / (dotNV * (1.0 - k) + k);
+  return g1L * g1V;
 }
 
 void main()
@@ -105,13 +131,44 @@ void main()
     }
   } else if (material.type == RT_MATERIAL_DIELECTRIC) {
     float eta = isFront ? (1 / material.ior) : material.ior;
+    // sqrt(f0) = (n1-n2)/(n1+n2) = (eta-1)/(eta+1)
+    float sqrtF0 = (eta - 1) / (eta + 1);
+    float f0 = sqrtF0 * sqrtF0;
     vec3 refractedDir = refract(unitRayDir, normal, eta);
-    if (nearZero(refractedDir) || fresnel(dot(-unitRayDir, normal), eta) > randomFloat(payload.randomState, 0.0, 1.0)) {
-      // Total internal reflection or fresnel
+    float fresnel = fresnelSchlick(dot(-unitRayDir, normal), vec3(f0)).x;
+    if (nearZero(refractedDir) || fresnel > randomFloat(payload.randomState, 0.0, 1.0)) {
+      // Total internal reflection or Fresnel
       refractedDir = reflect(unitRayDir, normal);
     }
     payload.nextDirection = refractedDir;
     payload.nextOrigin = hitPoint;
+    payload.traceNextRay = true;
+  } else if (material.type == RT_MATERIAL_PBR) {
+    // Vector towards the camera
+    vec3 viewVec = -unitRayDir;
+    // Vector of incoming light (from point on the point of intersection to light source or another object)
+    vec3 lightVec = normal + randomPointInUnitSphere(payload.randomState);
+    if (nearZero(lightVec)) lightVec = normal;
+    lightVec = normalize(lightVec);
+    // Halfway vector
+    vec3 halfwayVec = normalize(viewVec + lightVec);
+    // Normal distribution function D(h)
+    float normalDist = normalDistGGX(normal, halfwayVec, material.roughness);
+    // Geometric attenuation term G(l,v,h)
+    float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, material.roughness);
+    // Fresnel factor F(v,h)
+    vec3 f0 = mix(vec3(0.04), material.color, material.metallic);
+    vec3 fresnel = fresnelSchlick(dot(viewVec, halfwayVec), f0);
+    // Final BRDF calculation
+    float dotNL = dot(normal, lightVec);
+    float dotNV = dot(normal, viewVec);
+    vec3 diffuseBRDF = material.color / PI;
+    vec3 specularBRDF = normalDist * fresnel * geometricAttenuation / (4.0 * dotNL * dotNV);
+    vec3 brdf = diffuseBRDF * fresnelSchlick(dotNV, f0) + specularBRDF;
+    // Trace next ray
+    payload.color *= brdf;
+    payload.nextOrigin = hitPoint;
+    payload.nextDirection = lightVec;
     payload.traceNextRay = true;
   } else {  // Unknown material
     payload.color *= vec3(0.0);

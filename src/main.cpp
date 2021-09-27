@@ -33,13 +33,18 @@ int main(int argc, char* argv[])
   RayTracingMaterial centerMaterial;
   centerMaterial.type = RT_MATERIAL_LAMBERT;
   centerMaterial.color = vsg::vec3(0.1f, 0.2f, 0.5f);
+  //centerMaterial.roughness = 1.0f;
+  //centerMaterial.metallic = 0.0f;
   RayTracingMaterial leftMaterial;
-  leftMaterial.type = RT_MATERIAL_DIELECTRIC;
-  leftMaterial.ior = 1.5f;
+  leftMaterial.type = RT_MATERIAL_PBR;
+  leftMaterial.color = vsg::vec3(1.0f, 1.0f, 1.0f);
+  leftMaterial.roughness = 0.0f;
+  leftMaterial.metallic = 1.0f;
   RayTracingMaterial rightMaterial;
-  rightMaterial.type = RT_MATERIAL_METAL;
+  rightMaterial.type = RT_MATERIAL_PBR;
   rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
-  rightMaterial.fuzz = 0.0f;
+  rightMaterial.roughness = 0.2f;
+  rightMaterial.metallic = 1.0f;
 
   // Scene to render
   auto scene = vsg::Group::create();

@@ -9,7 +9,9 @@ const int MAX_DEPTH = 10;
 
 layout(binding = 0) uniform accelerationStructureEXT tlas;  // Acceleration structure (scene)
 layout(binding = 1, rgba32f) uniform image2D targetImage; // Image to store rendering result
-layout(binding = 2) uniform RayTracingUniform uniforms;
+layout(binding = 2) uniform Uniforms {
+  RayTracingUniform uniforms;
+};
 
 layout(location = 0) rayPayloadEXT RayPayload payload;
 

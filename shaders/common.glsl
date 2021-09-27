@@ -1,10 +1,12 @@
 // Constants, struct definitions, and utility functions for shaders
 
 const float EPSILON = 0.0001;
+const float PI = 3.14159265359;
 
 const int RT_MATERIAL_LAMBERT = 0;
 const int RT_MATERIAL_METAL = 1;
 const int RT_MATERIAL_DIELECTRIC = 2;
+const int RT_MATERIAL_PBR = 3;
 
 struct Material
 {
@@ -12,6 +14,8 @@ struct Material
   vec3 color;
   float fuzz;
   float ior;
+  float metallic;
+  float roughness;
 };
 
 struct ObjectInfo
