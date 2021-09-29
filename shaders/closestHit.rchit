@@ -15,19 +15,19 @@
 //  R. Guy and M. Agopian, "Physically Based Rendering in Filament", https://google.github.io/filament/Filament.md.html
 //  shocker, "Disney Principled BRDF - Computer Graphics - memoRANDOM", https://rayspace.xyz/CG/contents/Disney_principled_BRDF/
 
-layout(binding = 3, scalar) buffer ObjectInfos {
+layout(binding = 3, scalar) readonly buffer ObjectInfos {
   ObjectInfo objectInfos[];
 };
-layout(binding = 4, scalar) buffer Indices {
+layout(binding = 4, scalar) readonly buffer Indices {
   uint16_t indices[];
 };
-layout(binding = 5, scalar) buffer Vertices {
+layout(binding = 5, scalar) readonly buffer Vertices {
   vec3 vertices[];
 };
-layout(binding = 6, scalar) buffer Normals {
+layout(binding = 6, scalar) readonly buffer Normals {
   vec3 normals[];
 };
-layout(binding = 7, scalar) buffer TexCoords {
+layout(binding = 7, scalar) readonly buffer TexCoords {
   vec2 texCoords[];
 };
 
