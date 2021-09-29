@@ -15,8 +15,8 @@
 // Vulkan-specific designs are based on NVIDIA Vulkan Ray Tracing tutorial:
 //  https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 
-const int SCREEN_WIDTH = 400;
-const int SCREEN_HEIGHT = 225;
+const int SCREEN_WIDTH = 800;
+const int SCREEN_HEIGHT = 450;
 
 const uint32_t SAMPLES_PER_PIXEL = 100;
 
@@ -28,22 +28,24 @@ int main(int argc, char* argv[])
 
   // Define materials used in the scene
   RayTracingMaterial groundMaterial;
-  groundMaterial.type = RT_MATERIAL_LAMBERT;
+  groundMaterial.type = RT_MATERIAL_PBR;
   groundMaterial.color = vsg::vec3(0.8f, 0.8f, 0.0f);
+  groundMaterial.roughness = 1.0f;
+  groundMaterial.metallic = 0.0f;
   RayTracingMaterial centerMaterial;
-  centerMaterial.type = RT_MATERIAL_LAMBERT;
+  centerMaterial.type = RT_MATERIAL_PBR;
   centerMaterial.color = vsg::vec3(0.1f, 0.2f, 0.5f);
-  //centerMaterial.roughness = 1.0f;
-  //centerMaterial.metallic = 0.0f;
+  centerMaterial.roughness = 0.1f;
+  centerMaterial.metallic = 0.0f;
   RayTracingMaterial leftMaterial;
   leftMaterial.type = RT_MATERIAL_PBR;
   leftMaterial.color = vsg::vec3(1.0f, 1.0f, 1.0f);
-  leftMaterial.roughness = 0.0f;
+  leftMaterial.roughness = 0.5f;
   leftMaterial.metallic = 1.0f;
   RayTracingMaterial rightMaterial;
   rightMaterial.type = RT_MATERIAL_PBR;
   rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
-  rightMaterial.roughness = 0.2f;
+  rightMaterial.roughness = 0.0f;
   rightMaterial.metallic = 1.0f;
 
   // Scene to render
@@ -57,7 +59,6 @@ int main(int argc, char* argv[])
   scene->addChild(centerGroup);
   auto leftGroup = RayTracingMaterialGroup::create(leftMaterial);
   leftGroup->addChild(createSphere(vsg::vec3(-1.0f, 0.0f, -1.0f), 0.5f));
-  leftGroup->addChild(createSphere(vsg::vec3(-1.0f, 0.0f, -1.0f), -0.4f));
   scene->addChild(leftGroup);
   auto rightGroup = RayTracingMaterialGroup::create(rightMaterial);
   rightGroup->addChild(createSphere(vsg::vec3(1.0f, 0.0f, -1.0f), 0.5f));

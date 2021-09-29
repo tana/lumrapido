@@ -12,6 +12,8 @@
 //  B. Burley, "Physically Based Shading at Disney", in SIGGRAPH 2012 Course: Practical Physically Based Shading in Film and Game production, 2012, https://blog.selfshadow.com/publications/s2012-shading-course/burley/s2012_pbs_disney_brdf_notes_v3.pdf
 //  B. Karis, "Real Shading in Unreal Engine 4", in SIGGRAPH 2013 Course: Physically Based Shading in Theory and Practice, 2013, https://cdn2.unrealengine.com/Resources/files/2013SiggraphPresentationsNotes-26915738.pdf
 //  C. Schlick, "An Inexpensive BRDF Model for Physically-based Rendering", in Computer Graphics Forum, vol. 13, no. 3, 1994, pp. 233-246.
+//  R. Guy and M. Agopian, "Physically Based Rendering in Filament", https://google.github.io/filament/Filament.md.html
+//  shocker, "Disney Principled BRDF - Computer Graphics - memoRANDOM", https://rayspace.xyz/CG/contents/Disney_principled_BRDF/
 
 layout(binding = 3, scalar) buffer ObjectInfos {
   ObjectInfo objectInfos[];
@@ -52,22 +54,30 @@ vec3 fresnelSchlick(in float cosTheta, in vec3 f0)
   return f0 + (1 - f0) * pow(1 - cosTheta, 5);
 }
 
-// GGX/Trowbridge-Reitz normal distribution function D(h)
-float normalDistGGX(in vec3 halfwayVec, in vec3 normal, float roughness)
+// Sample a halfway vector from GGX/Trowbridge-Reitz normal distribution
+// Based on the following articles:
+//  B. Walter et al., "Microfacet Models for Refraction through Rough Surfaces," in Proceedings of the 18th Eurographics conference on Rendering Techniques (EGSR'07), 2007, pp. 195-206.
+//  "Sampling microfacet BRDF," https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
+//  "Importance Sampling techniques for GGX with Smith Masking-Shadowing: Part 1," https://schuttejoe.github.io/post/ggximportancesamplingpart1/
+vec3 sampleGGX(in RandomState state, in vec3 viewVec, in vec3 normal, in float roughness)
 {
   float alpha = roughness * roughness;
-  float alphaSq = alpha * alpha;
-  float dotNH = dot(normal, halfwayVec);
-  float ggxTemp = dotNH * dotNH * (alphaSq - 1.0) + 1.0;
-  return alphaSq / (PI * ggxTemp * ggxTemp);
+
+  float rand1 = randomFloat(state, 0.0, 1.0);
+  float rand2 = randomFloat(state, 0.0, 1.0);
+
+  float theta = atan(alpha * sqrt(rand1 / (1.0 - rand1)));
+  float phi = 2.0 * PI * rand2;
+
+  vec3 tangent = normalize(cross(normal, viewVec));
+  vec3 binormal = cross(tangent, normal);
+  
+  return tangent * sin(theta) * cos(phi) + normal * cos(theta) + binormal * sin(theta) * sin(phi);
 }
 
 // Schlick GGX Geometric attenuation term G(l,v,h)
-float geometricAttenuationSchlick(in vec3 lightVec, in vec3 viewVec, in vec3 normal, float roughness)
+float geometricAttenuationSchlick(in vec3 lightVec, in vec3 viewVec, in vec3 normal, in float roughness)
 {
-  // Halfway vector
-  vec3 halfwayVec = normalize(viewVec + lightVec);
-
   float dotNL = dot(normal, lightVec);
   float dotNV = dot(normal, viewVec);
   float alpha = roughness * roughness;
@@ -144,29 +154,45 @@ void main()
     payload.nextOrigin = hitPoint;
     payload.traceNextRay = true;
   } else if (material.type == RT_MATERIAL_PBR) {
+    vec3 lightVec;  // Vector of incoming light (from point on the point of intersection to light source or another object)
+
     // Vector towards the camera
     vec3 viewVec = -unitRayDir;
-    // Vector of incoming light (from point on the point of intersection to light source or another object)
-    vec3 lightVec = normal + randomPointInUnitSphere(payload.randomState);
-    if (nearZero(lightVec)) lightVec = normal;
-    lightVec = normalize(lightVec);
-    // Halfway vector
-    vec3 halfwayVec = normalize(viewVec + lightVec);
-    // Normal distribution function D(h)
-    float normalDist = normalDistGGX(normal, halfwayVec, material.roughness);
-    // Geometric attenuation term G(l,v,h)
-    float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, material.roughness);
-    // Fresnel factor F(v,h)
-    vec3 f0 = mix(vec3(0.04), material.color, material.metallic);
-    vec3 fresnel = fresnelSchlick(dot(viewVec, halfwayVec), f0);
-    // Final BRDF calculation
-    float dotNL = dot(normal, lightVec);
     float dotNV = dot(normal, viewVec);
-    vec3 diffuseBRDF = material.color / PI;
-    vec3 specularBRDF = normalDist * fresnel * geometricAttenuation / (4.0 * dotNL * dotNV);
-    vec3 brdf = diffuseBRDF * fresnelSchlick(dotNV, f0) + specularBRDF;
+
+    if (randomFloat(payload.randomState, 0.0, 1.0) < 0.5) { // Specular
+      // Fresnel factor F(v,h)
+      vec3 f0 = mix(vec3(0.04), material.color, material.metallic);
+
+      // Sample a halfway vector from GGX NDF
+      vec3 halfwayVec = sampleGGX(payload.randomState, viewVec, normal, material.roughness);
+      // Calculate light vector from halfway vector
+      lightVec = reflect(-viewVec, halfwayVec);
+
+      // Geometric attenuation term G(l,v,h)
+      float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, material.roughness);
+
+      if (dot(lightVec, normal) <= 0.0 || dot(lightVec, halfwayVec) <= 0.0) { // Not reflecting
+        payload.color = vec3(0.0);
+        payload.traceNextRay = false;
+        return;
+      }
+
+      vec3 fresnel = fresnelSchlick(dot(viewVec, halfwayVec), f0);
+      float dotVH = dot(viewVec, halfwayVec);
+      float dotNH = dot(normal, halfwayVec);
+
+      payload.color *= 2.0 * fresnel * geometricAttenuation * dotVH / (dotNV * dotNH);
+    } else {  // Diffuse
+      lightVec = normal + randomPointInUnitSphere(payload.randomState);
+      if (nearZero(lightVec)) {
+        lightVec = normal;
+      }
+
+      payload.color *= 2.0 * (1.0 - material.metallic) * material.color / PI;
+    }
+
     // Trace next ray
-    payload.color *= brdf;
     payload.nextOrigin = hitPoint;
     payload.nextDirection = lightVec;
     payload.traceNextRay = true;
