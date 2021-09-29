@@ -59,7 +59,7 @@ vec3 fresnelSchlick(in float cosTheta, in vec3 f0)
 //  B. Walter et al., "Microfacet Models for Refraction through Rough Surfaces," in Proceedings of the 18th Eurographics conference on Rendering Techniques (EGSR'07), 2007, pp. 195-206.
 //  "Sampling microfacet BRDF," https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
 //  "Importance Sampling techniques for GGX with Smith Masking-Shadowing: Part 1," https://schuttejoe.github.io/post/ggximportancesamplingpart1/
-vec3 sampleGGX(in RandomState state, in vec3 viewVec, in vec3 normal, in float roughness)
+vec3 sampleGGX(inout RandomState state, in vec3 viewVec, in vec3 normal, in float roughness)
 {
   float alpha = roughness * roughness;
 
