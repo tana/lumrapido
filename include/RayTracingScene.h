@@ -24,7 +24,7 @@ class RayTracingScene : public vsg::Inherit<vsg::Object, RayTracingScene>
 public:
   RayTracingScene(vsg::Device* device);
 
-  uint32_t addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::Data> indices, vsg::ref_ptr<vsg::Data> vertices, vsg::ref_ptr<vsg::Data> normals, vsg::ref_ptr<vsg::Data> texCoords, const RayTracingMaterial& material);
+  uint32_t addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::ushortArray> indices, vsg::ref_ptr<vsg::vec3Array> vertices, vsg::ref_ptr<vsg::vec3Array> normals, vsg::ref_ptr<vsg::vec2Array> texCoords, const RayTracingMaterial& material);
 
   vsg::ref_ptr<vsg::Array<ObjectInfo>> getObjectInfo() const;
   vsg::ref_ptr<vsg::ushortArray> getIndices() const;

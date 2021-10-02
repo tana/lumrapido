@@ -8,7 +8,7 @@ RayTracingScene::RayTracingScene(vsg::Device* device)
   tlas = vsg::TopLevelAccelerationStructure::create(device);
 }
 
-uint32_t RayTracingScene::addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::Data> indices, vsg::ref_ptr<vsg::Data> vertices, vsg::ref_ptr<vsg::Data> normals, vsg::ref_ptr<vsg::Data> texCoords, const RayTracingMaterial& material)
+uint32_t RayTracingScene::addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::ushortArray> indices, vsg::ref_ptr<vsg::vec3Array> vertices, vsg::ref_ptr<vsg::vec3Array> normals, vsg::ref_ptr<vsg::vec2Array> texCoords, const RayTracingMaterial& material)
 {
   // ID (index of a object)
   uint32_t id = uint32_t(tlas->geometryInstances.size());
@@ -39,10 +39,10 @@ uint32_t RayTracingScene::addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::
   objectInfoList.push_back(info);
 
   // Store indices and vertex attributes for closest-hit shader
-  indicesList.push_back(indices.cast<vsg::ushortArray>());
-  verticesList.push_back(vertices.cast<vsg::vec3Array>());
-  normalsList.push_back(normals.cast<vsg::vec3Array>());
-  texCoordsList.push_back(texCoords.cast<vsg::vec2Array>());
+  indicesList.push_back(indices);
+  verticesList.push_back(vertices);
+  normalsList.push_back(normals);
+  texCoordsList.push_back(texCoords);
 
   // Count indices and vertex attributes for offsets
   numIndices += uint32_t(indices->valueCount());

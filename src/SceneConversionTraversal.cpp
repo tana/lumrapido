@@ -26,12 +26,24 @@ void SceneConversionTraversal::apply(vsg::MatrixTransform& transform)
 
 void SceneConversionTraversal::apply(vsg::Geometry& geometry)
 {
-  scene->addMesh(matrixStack.top(), geometry.indices, geometry.arrays[0], geometry.arrays[1], geometry.arrays[2], materialStack.top());
+  scene->addMesh(
+    matrixStack.top(),
+    geometry.indices.cast<vsg::ushortArray>(),
+    geometry.arrays[0].cast<vsg::vec3Array>(),
+    geometry.arrays[1].cast<vsg::vec3Array>(),
+    geometry.arrays[2].cast<vsg::vec2Array>(),
+    materialStack.top());
 }
 
 void SceneConversionTraversal::apply(vsg::VertexIndexDraw& vertexIndexDraw)
 {
-  scene->addMesh(matrixStack.top(), vertexIndexDraw.indices, vertexIndexDraw.arrays[0], vertexIndexDraw.arrays[1], vertexIndexDraw.arrays[2], materialStack.top());
+  scene->addMesh(
+    matrixStack.top(),
+    vertexIndexDraw.indices.cast<vsg::ushortArray>(),
+    vertexIndexDraw.arrays[0].cast<vsg::vec3Array>(),
+    vertexIndexDraw.arrays[1].cast<vsg::vec3Array>(),
+    vertexIndexDraw.arrays[2].cast<vsg::vec2Array>(),
+    materialStack.top());
 }
 
 void SceneConversionTraversal::apply(RayTracingMaterialGroup& rtMatGroup)
