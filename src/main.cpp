@@ -3,6 +3,9 @@
 #include <vsg/all.h>
 #include <vsgXchange/all.h>
 #include "RayTracer.h"
+#include "RayTracingMaterialGroup.h"
+#include "SceneConversionTraversal.h"
+#include "utils.h"
 
 // Real-time ray tracing using Vulkan Ray Tracing extension
 // Based on VSG's vsgraytracing example:
@@ -22,6 +25,44 @@ const int FPS_MEASURE_COUNT = 100;
 int main(int argc, char* argv[])
 {
   auto options = vsg::Options::create(vsgXchange::all::create());
+
+  // Define materials used in the scene
+  RayTracingMaterial groundMaterial;
+  groundMaterial.type = RT_MATERIAL_PBR;
+  groundMaterial.color = vsg::vec3(0.8f, 0.8f, 0.0f);
+  groundMaterial.roughness = 1.0f;
+  groundMaterial.metallic = 0.0f;
+  RayTracingMaterial centerMaterial;
+  centerMaterial.type = RT_MATERIAL_PBR;
+  centerMaterial.color = vsg::vec3(0.1f, 0.2f, 0.5f);
+  centerMaterial.roughness = 0.1f;
+  centerMaterial.metallic = 0.0f;
+  RayTracingMaterial leftMaterial;
+  leftMaterial.type = RT_MATERIAL_PBR;
+  leftMaterial.color = vsg::vec3(1.0f, 1.0f, 1.0f);
+  leftMaterial.roughness = 0.5f;
+  leftMaterial.metallic = 1.0f;
+  RayTracingMaterial rightMaterial;
+  rightMaterial.type = RT_MATERIAL_PBR;
+  rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
+  rightMaterial.roughness = 0.0f;
+  rightMaterial.metallic = 1.0f;
+
+  // Scene to render
+  auto scene = vsg::Group::create();
+  auto groundGroup = RayTracingMaterialGroup::create(groundMaterial);
+  groundGroup->addChild(createSphere(vsg::vec3(0.0f, -100.5f, -1.0f), 100.0f));
+  //groundGroup->addChild(createQuad(vsg::vec3(0.0f, -0.5f, -1.0f), vsg::vec3(0.0f, 1.0f, 0.0f), vsg::vec3(0.0f, 0.0f, -1.0f), 100.0f, 100.0f));
+  scene->addChild(groundGroup);
+  auto centerGroup = RayTracingMaterialGroup::create(centerMaterial);
+  centerGroup->addChild(createSphere(vsg::vec3(0.0f, 0.0f, -1.0f), 0.5f));
+  scene->addChild(centerGroup);
+  auto leftGroup = RayTracingMaterialGroup::create(leftMaterial);
+  leftGroup->addChild(createSphere(vsg::vec3(-1.0f, 0.0f, -1.0f), 0.5f));
+  scene->addChild(leftGroup);
+  auto rightGroup = RayTracingMaterialGroup::create(rightMaterial);
+  rightGroup->addChild(createSphere(vsg::vec3(1.0f, 0.0f, -1.0f), 0.5f));
+  scene->addChild(rightGroup);
 
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
@@ -49,7 +90,11 @@ int main(int argc, char* argv[])
 
   vsg::Device* device = window->getOrCreateDevice();  // Handle of a Vulkan device (GPU?)
 
-  auto rayTracer = RayTracer::create(device, SCREEN_WIDTH, SCREEN_HEIGHT);
+  // Convert scene into acceleration structure for ray tracing
+  SceneConversionTraversal sceneConversionTraversal(device);
+  scene->accept(sceneConversionTraversal);
+
+  auto rayTracer = RayTracer::create(device, SCREEN_WIDTH, SCREEN_HEIGHT, sceneConversionTraversal.scene);
 
   auto viewer = vsg::Viewer::create();
   viewer->addWindow(window);

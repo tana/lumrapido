@@ -8,7 +8,7 @@ find_package(vsg REQUIRED)
 find_package(vsgXchange REQUIRED)
 find_package(Vulkan REQUIRED)
 
-add_executable(VSGRayTracer "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp")
+add_executable(VSGRayTracer "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp" "include/RayTracingScene.h" "src/RayTracingScene.cpp")
 target_include_directories(VSGRayTracer PRIVATE "include/")
 target_link_libraries(VSGRayTracer vsg::vsg vsgXchange::vsgXchange)
 

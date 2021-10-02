@@ -2,52 +2,13 @@
 
 #include <cstdint>
 #include <iostream>
-#include "utils.h"
+#include <vsg/all.h>
 #include "RayTracingUniform.h"
-#include "RayTracingMaterialGroup.h"
-#include "SceneConversionTraversal.h"
 
-RayTracer::RayTracer(vsg::Device* device, int width, int height)
-  : device(device), screenSize({ uint32_t(width), uint32_t(height) })
+RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<RayTracingScene> scene)
+  : device(device), screenSize({ uint32_t(width), uint32_t(height) }),
+    scene(scene)
 {
-  // Define materials used in the scene
-  RayTracingMaterial groundMaterial;
-  groundMaterial.type = RT_MATERIAL_PBR;
-  groundMaterial.color = vsg::vec3(0.8f, 0.8f, 0.0f);
-  groundMaterial.roughness = 1.0f;
-  groundMaterial.metallic = 0.0f;
-  RayTracingMaterial centerMaterial;
-  centerMaterial.type = RT_MATERIAL_PBR;
-  centerMaterial.color = vsg::vec3(0.1f, 0.2f, 0.5f);
-  centerMaterial.roughness = 0.1f;
-  centerMaterial.metallic = 0.0f;
-  RayTracingMaterial leftMaterial;
-  leftMaterial.type = RT_MATERIAL_PBR;
-  leftMaterial.color = vsg::vec3(1.0f, 1.0f, 1.0f);
-  leftMaterial.roughness = 0.5f;
-  leftMaterial.metallic = 1.0f;
-  RayTracingMaterial rightMaterial;
-  rightMaterial.type = RT_MATERIAL_PBR;
-  rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
-  rightMaterial.roughness = 0.0f;
-  rightMaterial.metallic = 1.0f;
-
-  // Scene to render
-  auto scene = vsg::Group::create();
-  auto groundGroup = RayTracingMaterialGroup::create(groundMaterial);
-  groundGroup->addChild(createSphere(vsg::vec3(0.0f, -100.5f, -1.0f), 100.0f));
-  //groundGroup->addChild(createQuad(vsg::vec3(0.0f, -0.5f, -1.0f), vsg::vec3(0.0f, 1.0f, 0.0f), vsg::vec3(0.0f, 0.0f, -1.0f), 100.0f, 100.0f));
-  scene->addChild(groundGroup);
-  auto centerGroup = RayTracingMaterialGroup::create(centerMaterial);
-  centerGroup->addChild(createSphere(vsg::vec3(0.0f, 0.0f, -1.0f), 0.5f));
-  scene->addChild(centerGroup);
-  auto leftGroup = RayTracingMaterialGroup::create(leftMaterial);
-  leftGroup->addChild(createSphere(vsg::vec3(-1.0f, 0.0f, -1.0f), 0.5f));
-  scene->addChild(leftGroup);
-  auto rightGroup = RayTracingMaterialGroup::create(rightMaterial);
-  rightGroup->addChild(createSphere(vsg::vec3(1.0f, 0.0f, -1.0f), 0.5f));
-  scene->addChild(rightGroup);
-
   uniformValue = RayTracingUniformValue::create();
 
   // Load shaders
@@ -74,15 +35,12 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height)
 
   auto shaderGroups = vsg::RayTracingShaderGroups{ rayGenerationShaderGroup, missShaderGroup, closestHitShaderGroup };
 
-  // Convert scene into acceleration structure for ray tracing
-  SceneConversionTraversal sceneConversionTraversal(device);
-  scene->accept(sceneConversionTraversal);
-  vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas = sceneConversionTraversal.tlas;
-  auto objectInfo = sceneConversionTraversal.getObjectInfo();
-  auto indices = sceneConversionTraversal.getIndices();
-  auto vertices = sceneConversionTraversal.getVertices();
-  auto normals = sceneConversionTraversal.getNormals();
-  auto texCoords = sceneConversionTraversal.getTexCoords();
+  vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas = scene->tlas;
+  auto objectInfo = scene->getObjectInfo();
+  auto indices = scene->getIndices();
+  auto vertices = scene->getVertices();
+  auto normals = scene->getNormals();
+  auto texCoords = scene->getTexCoords();
 
   // Create a target image for rendering
   targetImage = vsg::Image::create();

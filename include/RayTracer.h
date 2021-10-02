@@ -12,11 +12,12 @@
 #include <vsg/state/DescriptorBuffer.h>
 #include <vsg/state/DescriptorSet.h>
 #include "RayTracingUniform.h"
+#include "RayTracingScene.h"
 
 class RayTracer : public vsg::Inherit<vsg::Object, RayTracer>
 {
 public:
-  RayTracer(vsg::Device* device, int width, int height);
+  RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<RayTracingScene> scene);
 
   // Update setting of samples per pixel in uniform buffer
   void setSamplesPerPixel(int samplesPerPixel);
@@ -25,7 +26,9 @@ public:
 
   vsg::ref_ptr<vsg::CommandGraph> createCommandGraph(vsg::ref_ptr<vsg::Window> window);
 
-private:
+  vsg::ref_ptr<RayTracingScene> scene;
+
+protected:
   vsg::Device* device;
   
   VkExtent2D screenSize;
