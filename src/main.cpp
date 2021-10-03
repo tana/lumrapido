@@ -74,8 +74,12 @@ int main(int argc, char* argv[])
   // Use VSG's option parser to handle command line arguments
   vsg::CommandLine arguments(&argc, argv);
   bool useDebugLayer = arguments.read({ "--debug" });
+
+  std::string gltfFile;
   // Flags such as "--debug" are removed by arguments.read calls above
-  std::string gltfFile = arguments[1];
+  if (arguments.argc() >= 2) {
+    gltfFile = arguments[1];
+  }
 
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
