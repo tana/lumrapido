@@ -8,9 +8,13 @@ find_package(vsg REQUIRED)
 find_package(vsgXchange REQUIRED)
 find_package(Vulkan REQUIRED)
 
-add_executable(VSGRayTracer "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp" "include/RayTracingScene.h" "src/RayTracingScene.cpp")
+set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
+set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
+add_subdirectory("./tinygltf")
+
+add_executable(VSGRayTracer "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp" "include/RayTracingScene.h" "src/RayTracingScene.cpp" "include/GLTFLoader.h" "src/GLTFLoader.cpp" "include/gltfUtils.h" "src/gltfUtils.cpp")
 target_include_directories(VSGRayTracer PRIVATE "include/")
-target_link_libraries(VSGRayTracer vsg::vsg vsgXchange::vsgXchange)
+target_link_libraries(VSGRayTracer vsg::vsg vsgXchange::vsgXchange tinygltf)
 
 set(GLSLC_FLAGS "--target-env=vulkan1.1" "--target-spv=spv1.4")
 
