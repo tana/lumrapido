@@ -88,8 +88,8 @@ T readComponentAndConvert(std::vector<unsigned char> byteArray, size_t pos, int 
     {
       uint64_t eightBytes = (uint64_t(byteArray[pos + 7]) << 56) | (uint64_t(byteArray[pos + 6]) << 48)
         | (uint64_t(byteArray[pos + 5]) << 40) | (uint64_t(byteArray[pos + 4]) << 32)
-        | (byteArray[pos + 3] << 24) | (byteArray[pos + 2] << 16)
-        | (byteArray[pos + 1] << 8) | byteArray[pos];
+        | (uint64_t(byteArray[pos + 3]) << 24) | (uint64_t(byteArray[pos + 2]) << 16)
+        | (uint64_t(byteArray[pos + 1]) << 8) | uint64_t(byteArray[pos]);
       return T(*reinterpret_cast<double*>(&eightBytes));
     }
   default:
@@ -120,7 +120,7 @@ struct ComponentsToVectorOrScalar
 {
   static
     typename std::enable_if<std::disjunction<std::is_integral<T>, std::is_floating_point<T>>::value, T>::type
-  call(std::vector<T> components)
+  call(const std::vector<T>& components)
   {
     return components[0];
   }
@@ -129,7 +129,7 @@ struct ComponentsToVectorOrScalar
 template<typename CompType>
 struct ComponentsToVectorOrScalar<vsg::t_vec2<CompType>>
 {
-  static vsg::t_vec2<CompType> call(std::vector<CompType> components)
+  static vsg::t_vec2<CompType> call(const std::vector<CompType>& components)
   {
     return vsg::t_vec2<CompType>(components[0], components[1]);
   }
@@ -138,7 +138,7 @@ struct ComponentsToVectorOrScalar<vsg::t_vec2<CompType>>
 template<typename CompType>
 struct ComponentsToVectorOrScalar<vsg::t_vec3<CompType>>
 {
-  static vsg::t_vec3<CompType> call(std::vector<CompType> components)
+  static vsg::t_vec3<CompType> call(const std::vector<CompType>& components)
   {
     return vsg::t_vec3<CompType>(components[0], components[1], components[2]);
   }
@@ -147,17 +147,16 @@ struct ComponentsToVectorOrScalar<vsg::t_vec3<CompType>>
 template<typename CompType>
 struct ComponentsToVectorOrScalar<vsg::t_vec4<CompType>>
 {
-  static vsg::t_vec4<CompType> call(std::vector<CompType> components)
+  static vsg::t_vec4<CompType> call(const std::vector<CompType>& components)
   {
     return vsg::t_vec4<CompType>(components[0], components[1], components[2], components[3]);
   }
 };
 
-
 template<typename T>
-vsg::ref_ptr<vsg::Array<T>> readGLTFBuffer(int accessorIdx, tinygltf::Model& model)
+vsg::ref_ptr<vsg::Array<T>> readGLTFBuffer(int accessorIdx, const tinygltf::Model& model)
 {
-  tinygltf::Accessor& accessor = model.accessors[accessorIdx];
+  const tinygltf::Accessor& accessor = model.accessors[accessorIdx];
 
   if (accessor.sparse.isSparse) { // Sparse accessor is not supported
     return {};
@@ -168,8 +167,8 @@ vsg::ref_ptr<vsg::Array<T>> readGLTFBuffer(int accessorIdx, tinygltf::Model& mod
     return {};
   }
 
-  tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
-  tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
+  const tinygltf::BufferView& bufferView = model.bufferViews[accessor.bufferView];
+  const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
 
   auto arr = vsg::Array<T>::create(uint32_t(accessor.count));
 

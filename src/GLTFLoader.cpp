@@ -17,7 +17,7 @@ GLTFLoader::GLTFLoader(vsg::ref_ptr<RayTracingScene> scene)
 {
 }
 
-bool GLTFLoader::loadFile(std::string path)
+bool GLTFLoader::loadFile(const std::string& path)
 {
   tinygltf::TinyGLTF tinyGLTF;
   tinygltf::Model model;
@@ -45,7 +45,7 @@ bool GLTFLoader::loadFile(std::string path)
   return loadModel(model);
 }
 
-bool GLTFLoader::loadModel(tinygltf::Model& model)
+bool GLTFLoader::loadModel(const tinygltf::Model& model)
 {
   bool ret = true;
   for (auto& gltfScene : model.scenes) {
@@ -54,7 +54,7 @@ bool GLTFLoader::loadModel(tinygltf::Model& model)
   return ret;
 }
 
-bool GLTFLoader::loadScene(tinygltf::Scene& gltfScene, tinygltf::Model& model)
+bool GLTFLoader::loadScene(const tinygltf::Scene& gltfScene, const tinygltf::Model& model)
 {
   bool ret = true;
   for (auto& nodeIdx : gltfScene.nodes) {
@@ -63,7 +63,7 @@ bool GLTFLoader::loadScene(tinygltf::Scene& gltfScene, tinygltf::Model& model)
   return ret;
 }
 
-bool GLTFLoader::loadNode(tinygltf::Node& node, tinygltf::Model& model, vsg::mat4& parentTransform)
+bool GLTFLoader::loadNode(const tinygltf::Node& node, const tinygltf::Model& model, const vsg::mat4& parentTransform)
 {
   bool ret = true;
 
@@ -72,7 +72,11 @@ bool GLTFLoader::loadNode(tinygltf::Node& node, tinygltf::Model& model, vsg::mat
   vsg::mat4 transform;  // Default is identity matrix
 
   if (!node.matrix.empty()) {
-    transform = vsg::dmat4(node.matrix.data());
+    transform = vsg::dmat4(
+      node.matrix[0], node.matrix[1],node.matrix[2], node.matrix[3],
+      node.matrix[4], node.matrix[5],node.matrix[6], node.matrix[7],
+      node.matrix[8], node.matrix[9],node.matrix[10], node.matrix[11],
+      node.matrix[12], node.matrix[13],node.matrix[14], node.matrix[15]);
   }
 
   if (!node.translation.empty()) {
@@ -97,7 +101,7 @@ bool GLTFLoader::loadNode(tinygltf::Node& node, tinygltf::Model& model, vsg::mat
   return ret;
 }
 
-bool GLTFLoader::loadMesh(tinygltf::Mesh& mesh, tinygltf::Model& model, vsg::mat4& transform)
+bool GLTFLoader::loadMesh(const tinygltf::Mesh& mesh, const tinygltf::Model& model, const vsg::mat4& transform)
 {
   bool ret = true;
   for (auto& primitive : mesh.primitives) {
@@ -106,7 +110,7 @@ bool GLTFLoader::loadMesh(tinygltf::Mesh& mesh, tinygltf::Model& model, vsg::mat
   return ret;
 }
 
-bool GLTFLoader::loadPrimitive(tinygltf::Primitive& primitive, tinygltf::Model& model, vsg::mat4& transform)
+bool GLTFLoader::loadPrimitive(const tinygltf::Primitive& primitive, const tinygltf::Model& model, const vsg::mat4& transform)
 {
   if (primitive.mode != TINYGLTF_MODE_TRIANGLES) {
     std::cerr << "Only triangle meshes are supported" << std::endl;
@@ -114,9 +118,9 @@ bool GLTFLoader::loadPrimitive(tinygltf::Primitive& primitive, tinygltf::Model& 
   }
 
   auto indices = readGLTFBuffer<uint16_t>(primitive.indices, model);
-  auto vertices = readGLTFBuffer<vsg::vec3>(primitive.attributes["POSITION"], model);
-  auto normals = readGLTFBuffer<vsg::vec3>(primitive.attributes["NORMAL"], model);
-  auto texCoords = readGLTFBuffer<vsg::vec2>(primitive.attributes["TEXCOORD_0"], model);
+  auto vertices = readGLTFBuffer<vsg::vec3>(primitive.attributes.at("POSITION"), model);
+  auto normals = readGLTFBuffer<vsg::vec3>(primitive.attributes.at("NORMAL"), model);
+  auto texCoords = readGLTFBuffer<vsg::vec2>(primitive.attributes.at("TEXCOORD_0"), model);
 
   RayTracingMaterial material;
   material.type = RT_MATERIAL_LAMBERT;
