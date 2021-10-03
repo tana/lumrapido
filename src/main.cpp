@@ -4,6 +4,7 @@
 #include "RayTracer.h"
 #include "RayTracingMaterialGroup.h"
 #include "SceneConversionTraversal.h"
+#include "GLTFLoader.h"
 #include "utils.h"
 
 // Real-time ray tracing using Vulkan Ray Tracing extension
@@ -73,6 +74,8 @@ int main(int argc, char* argv[])
   // Use VSG's option parser to handle command line arguments
   vsg::CommandLine arguments(&argc, argv);
   bool useDebugLayer = arguments.read({ "--debug" });
+  // Flags such as "--debug" are removed by arguments.read calls above
+  std::string gltfFile = arguments[1];
 
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
@@ -101,7 +104,19 @@ int main(int argc, char* argv[])
 
   vsg::Device* device = window->getOrCreateDevice();  // Handle of a Vulkan device (GPU?)
 
-  vsg::ref_ptr<RayTracingScene> scene = createDefaultScene(device);
+  vsg::ref_ptr<RayTracingScene> scene;
+  if (!gltfFile.empty()) {
+    // Load scene from a GLTF file
+    scene = RayTracingScene::create(device);
+    GLTFLoader loader(scene);
+    if (!loader.loadFile(gltfFile)) {
+      std::cerr << "GLTF load error" << std::endl;
+      return -1;
+    }
+  } else {
+    // Use default scene
+    scene = createDefaultScene(device);
+  }
 
   auto rayTracer = RayTracer::create(device, SCREEN_WIDTH, SCREEN_HEIGHT, scene);
 
