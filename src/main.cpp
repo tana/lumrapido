@@ -1,7 +1,6 @@
 #include <iostream>
 #include <chrono>
 #include <vsg/all.h>
-#include <vsgXchange/all.h>
 #include "RayTracer.h"
 #include "RayTracingMaterialGroup.h"
 #include "SceneConversionTraversal.h"
@@ -24,8 +23,6 @@ const int FPS_MEASURE_COUNT = 100;
 
 int main(int argc, char* argv[])
 {
-  auto options = vsg::Options::create(vsgXchange::all::create());
-
   // Define materials used in the scene
   RayTracingMaterial groundMaterial;
   groundMaterial.type = RT_MATERIAL_PBR;
