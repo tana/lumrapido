@@ -21,12 +21,8 @@ const uint32_t SAMPLES_PER_PIXEL = 100;
 
 const int FPS_MEASURE_COUNT = 100;
 
-int main(int argc, char* argv[])
+vsg::ref_ptr<RayTracingScene> createDefaultScene(vsg::Device* device)
 {
-  // Use VSG's option parser to handle command line arguments
-  vsg::CommandLine arguments(&argc, argv);
-  bool useDebugLayer = arguments.read({ "--debug" });
-
   // Define materials used in the scene
   RayTracingMaterial groundMaterial;
   groundMaterial.type = RT_MATERIAL_PBR;
@@ -65,6 +61,19 @@ int main(int argc, char* argv[])
   rightGroup->addChild(createSphere(vsg::vec3(1.0f, 0.0f, -1.0f), 0.5f));
   scene->addChild(rightGroup);
 
+  // Convert scene into acceleration structure for ray tracing
+  SceneConversionTraversal sceneConversionTraversal(device);
+  scene->accept(sceneConversionTraversal);
+
+  return sceneConversionTraversal.scene;
+}
+
+int main(int argc, char* argv[])
+{
+  // Use VSG's option parser to handle command line arguments
+  vsg::CommandLine arguments(&argc, argv);
+  bool useDebugLayer = arguments.read({ "--debug" });
+
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
   windowTraits->swapchainPreferences.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;  // The screen can be target of image-to-image copy
@@ -92,11 +101,9 @@ int main(int argc, char* argv[])
 
   vsg::Device* device = window->getOrCreateDevice();  // Handle of a Vulkan device (GPU?)
 
-  // Convert scene into acceleration structure for ray tracing
-  SceneConversionTraversal sceneConversionTraversal(device);
-  scene->accept(sceneConversionTraversal);
+  vsg::ref_ptr<RayTracingScene> scene = createDefaultScene(device);
 
-  auto rayTracer = RayTracer::create(device, SCREEN_WIDTH, SCREEN_HEIGHT, sceneConversionTraversal.scene);
+  auto rayTracer = RayTracer::create(device, SCREEN_WIDTH, SCREEN_HEIGHT, scene);
 
   auto viewer = vsg::Viewer::create();
   viewer->addWindow(window);
