@@ -122,11 +122,28 @@ bool GLTFLoader::loadPrimitive(const tinygltf::Primitive& primitive, const tinyg
   auto normals = readGLTFBuffer<vsg::vec3>(primitive.attributes.at("NORMAL"), model);
   auto texCoords = readGLTFBuffer<vsg::vec2>(primitive.attributes.at("TEXCOORD_0"), model);
 
-  RayTracingMaterial material;
-  material.type = RT_MATERIAL_LAMBERT;
-  material.color = vsg::vec3(1.0, 1.0, 1.0);
+  std::optional<RayTracingMaterial> material = loadMaterial(model.materials[primitive.material], model);
+  if (!material) {
+    return false;
+  }
 
-  scene->addMesh(transform, indices, vertices, normals, texCoords, material);
+  scene->addMesh(transform, indices, vertices, normals, texCoords, material.value());
 
   return true;
+}
+
+std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Material& gltfMaterial, const tinygltf::Model& model)
+{
+  const tinygltf::PbrMetallicRoughness& pbr = gltfMaterial.pbrMetallicRoughness;
+  
+  RayTracingMaterial material;
+  material.type = RT_MATERIAL_PBR;
+
+  material.color.r = float(pbr.baseColorFactor[0]);
+  material.color.g = float(pbr.baseColorFactor[1]);
+  material.color.b = float(pbr.baseColorFactor[2]);
+  material.metallic = float(pbr.metallicFactor);
+  material.roughness = float(pbr.roughnessFactor);
+
+  return material;
 }
