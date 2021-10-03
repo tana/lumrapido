@@ -1,7 +1,6 @@
 #include <iostream>
 #include <chrono>
 #include <vsg/all.h>
-#include <vsgXchange/all.h>
 #include "RayTracer.h"
 #include "RayTracingMaterialGroup.h"
 #include "SceneConversionTraversal.h"
@@ -25,7 +24,9 @@ const int FPS_MEASURE_COUNT = 100;
 
 int main(int argc, char* argv[])
 {
-  auto options = vsg::Options::create(vsgXchange::all::create());
+  // Use VSG's option parser to handle command line arguments
+  vsg::CommandLine arguments(&argc, argv);
+  bool useDebugLayer = arguments.read({ "--debug" });
 
   auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
@@ -47,7 +48,8 @@ int main(int argc, char* argv[])
   windowTraits->deviceFeatures->get<VkPhysicalDeviceAccelerationStructureFeaturesKHR, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR>().accelerationStructure = true;
   windowTraits->deviceFeatures->get<VkPhysicalDeviceRayTracingPipelineFeaturesKHR, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR>().rayTracingPipeline = true;
   windowTraits->deviceFeatures->get<VkPhysicalDeviceBufferDeviceAddressFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES>().bufferDeviceAddress = true;
-  windowTraits->debugLayer = true;  // Enable Vulkan Validation Layer
+  // Enable Vulkan validation layer if specified by command line argument
+  windowTraits->debugLayer = useDebugLayer;
 
   auto window = vsg::Window::create(windowTraits);
 
