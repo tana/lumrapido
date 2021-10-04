@@ -96,12 +96,12 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
   texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoords, 7, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 7
 
   // Prepare descriptor for texture
-  auto emptyImage = vsg::Image::create();
-  emptyImage->usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+  auto emptyImageData = vsg::vec3Array2D::create(1, 1, vsg::Data::Layout{ VK_FORMAT_R32G32B32_SFLOAT });
+  auto emptyImage = vsg::Image::create(emptyImageData);
+  emptyImage->usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   emptyImage->format = VK_FORMAT_R32G32B32_SFLOAT;
-  emptyImage->initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   emptyImage->tiling = VK_IMAGE_TILING_LINEAR;
-  vsg::ImageInfo emptyImageInfo(vsg::Sampler::create(), vsg::ImageView::create(emptyImage));
+  vsg::ImageInfo emptyImageInfo(vsg::Sampler::create(), vsg::ImageView::create(emptyImage), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
   vsg::ImageInfoList imageInfoList(MAX_NUM_TEXTURES, emptyImageInfo);
   std::copy(
     scene->textures.cbegin(),

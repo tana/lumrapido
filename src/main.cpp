@@ -95,12 +95,17 @@ int main(int argc, char* argv[])
     VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
     VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
     VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
-    VK_KHR_SPIRV_1_4_EXTENSION_NAME
+    VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+    // Below are for shaders
+    VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME
   };
-  // Enable features related to the above extensions
+  // Enable features related to the above extensions and GLSL extensions used in shaders
   windowTraits->deviceFeatures->get<VkPhysicalDeviceAccelerationStructureFeaturesKHR, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR>().accelerationStructure = true;
   windowTraits->deviceFeatures->get<VkPhysicalDeviceRayTracingPipelineFeaturesKHR, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR>().rayTracingPipeline = true;
   windowTraits->deviceFeatures->get<VkPhysicalDeviceBufferDeviceAddressFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES>().bufferDeviceAddress = true;
+  windowTraits->deviceFeatures->get().shaderInt16 = true;
+  windowTraits->deviceFeatures->get<VkPhysicalDevice16BitStorageFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES>().storageBuffer16BitAccess = true;
+  windowTraits->deviceFeatures->get<VkPhysicalDeviceScalarBlockLayoutFeatures, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES>().scalarBlockLayout = true;
   // Enable Vulkan validation layer if specified by command line argument
   windowTraits->debugLayer = useDebugLayer;
 

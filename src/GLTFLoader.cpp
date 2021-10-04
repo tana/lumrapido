@@ -170,15 +170,14 @@ std::optional<uint32_t> GLTFLoader::loadTexture(const tinygltf::Texture& gltfTex
   vsg::ref_ptr<vsg::Data> imageData = readImageData(gltfImage.image, gltfImage.width, gltfImage.height, gltfImage.component, gltfImage.pixel_type);
 
   auto image = vsg::Image::create(imageData);
-  image->usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+  image->usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
   image->format = VK_FORMAT_R32G32B32_SFLOAT;
-  image->initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
   image->tiling = VK_IMAGE_TILING_LINEAR;
   auto imageView = vsg::ImageView::create(image);
   auto sampler = vsg::Sampler::create();
   // TODO: sampler setting
 
-  return scene->addTexture(vsg::ImageInfo(sampler, imageView));
+  return scene->addTexture(vsg::ImageInfo(sampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 }
 
 vsg::ref_ptr<vsg::vec3Array2D> GLTFLoader::readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType)
