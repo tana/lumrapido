@@ -31,6 +31,8 @@ layout(binding = 7, scalar) readonly buffer TexCoords {
   vec2 texCoords[];
 };
 
+layout(binding = 10) uniform sampler2D textures[MAX_NUM_TEXTURES];
+
 layout(location = 0) rayPayloadInEXT RayPayload payload;
 
 hitAttributeEXT vec2 uv;  // Barycentric coordinate of the hit position inside a triangle
@@ -96,9 +98,14 @@ void main()
   uint idx1 = uint(indices[indexOffset + 3 * gl_PrimitiveID + 1]);
   uint idx2 = uint(indices[indexOffset + 3 * gl_PrimitiveID + 2]);
 
+  // Normal vectors of each vertices
   vec3 normal0 = normals[vertexOffset + idx0];
   vec3 normal1 = normals[vertexOffset + idx1];
   vec3 normal2 = normals[vertexOffset + idx2];
+  // Texture coordinates of each vertices
+  vec2 texCoord0 = texCoords[vertexOffset + idx0];
+  vec2 texCoord1 = texCoords[vertexOffset + idx1];
+  vec2 texCoord2 = texCoords[vertexOffset + idx2];
 
   Material material = objectInfos[gl_InstanceID].material;
 
@@ -111,6 +118,15 @@ void main()
   // Reverse normal vector if the surface is facing back
   if (!isFront) {
     normal = -normal;
+  }
+
+  // Interpolate texture coord
+  vec2 texCoord = (1.0 - uv.x - uv.y) * texCoord0 + uv.x * texCoord1 + uv.y * texCoord2;
+
+  // Calculate base color
+  vec3 color = material.color;
+  if (material.colorTextureIdx >= 0) {  // If the object has a color texture
+    color *= texture(textures[material.colorTextureIdx], texCoord).xyz;
   }
 
   // Point of intersection
@@ -126,14 +142,14 @@ void main()
     }
     payload.nextOrigin = hitPoint;
     // Signal the caller (ray generation shader) to trace next ray, instead of recursively tracing
-    payload.color *= material.color;
+    payload.color *= color;
     payload.traceNextRay = true;
   } else if (material.type == RT_MATERIAL_METAL) {
     vec3 reflectedDir = reflect(unitRayDir, normal) + material.fuzz * randomPointInUnitSphere(payload.randomState);
     if (dot(reflectedDir, normal) > 0) {
       payload.nextDirection = reflectedDir;
       payload.nextOrigin = hitPoint;
-      payload.color *= material.color;
+      payload.color *= color;
       payload.traceNextRay = true;
     } else {  // When the reflected ray goes inside the object
       payload.color = vec3(0.0);
@@ -162,7 +178,7 @@ void main()
 
     if (randomFloat(payload.randomState, 0.0, 1.0) < 0.5) { // Specular
       // Fresnel factor F(v,h)
-      vec3 f0 = mix(vec3(0.04), material.color, material.metallic);
+      vec3 f0 = mix(vec3(0.04), color, material.metallic);
 
       // Sample a halfway vector from GGX NDF
       vec3 halfwayVec = sampleGGX(payload.randomState, viewVec, normal, material.roughness);
@@ -189,7 +205,7 @@ void main()
         lightVec = normal;
       }
 
-      payload.color *= 2.0 * (1.0 - material.metallic) * material.color / PI;
+      payload.color *= 2.0 * (1.0 - material.metallic) * color / PI;
     }
 
     // Trace next ray

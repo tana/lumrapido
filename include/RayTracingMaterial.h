@@ -12,10 +12,11 @@ enum RayTracingMaterialType
 
 struct RayTracingMaterial
 {
-  RayTracingMaterialType type;
-  vsg::vec3 color;
+  RayTracingMaterialType type = RT_MATERIAL_LAMBERT;
+  vsg::vec3 color = vsg::vec3(1.0f, 1.0f, 1.0f);
   float fuzz = 0.0f;
   float ior = 1.0f;  // Index of Refraction
   float metallic = 0.0f;
   float roughness = 0.0f;
+  int32_t colorTextureIdx;
 };

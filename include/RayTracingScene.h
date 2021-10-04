@@ -5,6 +5,7 @@
 #include <vsg/raytracing/TopLevelAccelerationStructure.h>
 #include <vsg/maths/mat4.h>
 #include <vsg/core/Data.h>
+#include <vsg/state/ImageInfo.h>
 #include "RayTracingMaterial.h"
 
 struct ObjectInfo
@@ -26,6 +27,8 @@ public:
 
   uint32_t addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::ushortArray> indices, vsg::ref_ptr<vsg::vec3Array> vertices, vsg::ref_ptr<vsg::vec3Array> normals, vsg::ref_ptr<vsg::vec2Array> texCoords, const RayTracingMaterial& material);
 
+  uint32_t addTexture(vsg::ImageInfo imageInfo);
+
   vsg::ref_ptr<vsg::Array<ObjectInfo>> getObjectInfo() const;
   vsg::ref_ptr<vsg::ushortArray> getIndices() const;
   vsg::ref_ptr<vsg::vec3Array> getVertices() const;
@@ -33,6 +36,8 @@ public:
   vsg::ref_ptr<vsg::vec2Array> getTexCoords() const;
 
   vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas;
+
+  vsg::ImageInfoList textures;
 
 private:
   vsg::Device* device;

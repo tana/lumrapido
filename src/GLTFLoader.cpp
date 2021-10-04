@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <iostream>
+#include <cstring>
 #include <vsg/maths/transform.h>
 #include <vsg/maths/quat.h>
 
@@ -145,5 +146,62 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
   material.metallic = float(pbr.metallicFactor);
   material.roughness = float(pbr.roughnessFactor);
 
+  if (pbr.baseColorTexture.index >= 0) {  // Has a base color texture
+    if (pbr.baseColorTexture.texCoord != 0) {
+      return std::nullopt;  // Only TEXCOORD_0 is supported
+    }
+
+    auto textureIdx = loadTexture(model.textures[pbr.baseColorTexture.index], model);
+    if (!textureIdx) {
+      return std::nullopt;
+    }
+    material.colorTextureIdx = textureIdx.value();
+  } else {
+    material.colorTextureIdx = -1;
+  }
+
   return material;
+}
+
+std::optional<uint32_t> GLTFLoader::loadTexture(const tinygltf::Texture& gltfTexture, const tinygltf::Model& model)
+{
+  const tinygltf::Image& gltfImage = model.images[gltfTexture.source];
+  
+  vsg::ref_ptr<vsg::Data> imageData = readImageData(gltfImage.image, gltfImage.width, gltfImage.height, gltfImage.component, gltfImage.pixel_type);
+
+  auto image = vsg::Image::create(imageData);
+  image->usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+  image->format = VK_FORMAT_R32G32B32_SFLOAT;
+  image->initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  image->tiling = VK_IMAGE_TILING_LINEAR;
+  auto imageView = vsg::ImageView::create(image);
+  auto sampler = vsg::Sampler::create();
+  // TODO: sampler setting
+
+  return scene->addTexture(vsg::ImageInfo(sampler, imageView));
+}
+
+vsg::ref_ptr<vsg::vec3Array2D> GLTFLoader::readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType)
+{
+  // Image format have to be specified in vsg::Array2D creation.
+  // It did not work when tried with format property of vsg::Image only.
+  //  See: https://github.com/vsg-dev/vsgXchange/blob/fb0f0754b72112edb821814f28d25a070790a89a/src/stbi/stbi.cpp#L134
+  auto imageData = vsg::vec3Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32G32B32_SFLOAT });
+
+  size_t compSize = sizeOfGLTFComponentType(compType);
+
+  vsg::vec3 pixelValue;
+
+  for (size_t i = 0; i < height; ++i) {
+    for (size_t j = 0; j < width; ++j) {
+      for (int k = 0; k < std::min(numComp, 3); ++k) {
+        size_t pos = ((i * width + j) * numComp + k) * compSize;
+        // TODO: Support component types other than 8-bit (scaling other than 256)
+        pixelValue[k] = readComponentAndConvert<float>(data, pos, compType) / 256.0f;
+      }
+      imageData->at(i * width + j) = pixelValue;
+    }
+  }
+
+  return imageData;
 }

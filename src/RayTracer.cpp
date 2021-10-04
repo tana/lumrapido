@@ -80,10 +80,12 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
     { 6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
     // Binding 7 is array of texture coords of all objects combined
     { 7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Binding 10 is textures
+    { 10, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(MAX_NUM_TEXTURES), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr }
   };
   auto descriptorLayout = vsg::DescriptorSetLayout::create(descriptorBindings);
 
-  // Create descriptors and descriptor set
+  // Create descriptors
   tlasDescriptor = vsg::DescriptorAccelerationStructure::create(vsg::AccelerationStructures{ tlas }, 0, 0); // Binding 0, first element of the array
   targetImageDescriptor = vsg::DescriptorImage::create(targetImageInfo, 1, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // Binding 1
   uniformDescriptor = vsg::DescriptorBuffer::create(uniformValue, 2, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);  // Binding 2
@@ -92,7 +94,23 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
   verticesDescriptor = vsg::DescriptorBuffer::create(vertices, 5, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 5
   normalsDescriptor = vsg::DescriptorBuffer::create(normals, 6, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 6
   texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoords, 7, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 7
-  descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor });
+
+  // Prepare descriptor for texture
+  auto emptyImage = vsg::Image::create();
+  emptyImage->usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+  emptyImage->format = VK_FORMAT_R32G32B32_SFLOAT;
+  emptyImage->initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+  emptyImage->tiling = VK_IMAGE_TILING_LINEAR;
+  vsg::ImageInfo emptyImageInfo(vsg::Sampler::create(), vsg::ImageView::create(emptyImage));
+  vsg::ImageInfoList imageInfoList(MAX_NUM_TEXTURES, emptyImageInfo);
+  std::copy(
+    scene->textures.cbegin(),
+    scene->textures.cbegin() + std::min(MAX_NUM_TEXTURES, scene->textures.size()),
+    imageInfoList.begin());
+  textureDescriptor = vsg::DescriptorImage::create(imageInfoList, 10, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Binding 10
+
+  // Combine descriptor into a descriptor set
+  descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, textureDescriptor });
 
   // Create ray tracing pipeline
   pipelineLayout = vsg::PipelineLayout::create(vsg::DescriptorSetLayouts{ descriptorLayout }, vsg::PushConstantRanges{});

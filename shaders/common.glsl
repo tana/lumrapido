@@ -3,6 +3,8 @@
 const float EPSILON = 0.0001;
 const float PI = 3.14159265359;
 
+const int MAX_NUM_TEXTURES = 32;
+
 const int RT_MATERIAL_LAMBERT = 0;
 const int RT_MATERIAL_METAL = 1;
 const int RT_MATERIAL_DIELECTRIC = 2;
@@ -16,6 +18,7 @@ struct Material
   float ior;
   float metallic;
   float roughness;
+  int colorTextureIdx;
 };
 
 struct ObjectInfo

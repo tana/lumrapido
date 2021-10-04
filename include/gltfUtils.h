@@ -64,7 +64,7 @@ size_t sizeOfGLTFComponentType(int compType);
 size_t numComponentsOfGLTFType(int type);
 
 template<typename T>
-T readComponentAndConvert(std::vector<unsigned char> byteArray, size_t pos, int compType)
+T readComponentAndConvert(const std::vector<unsigned char>& byteArray, size_t pos, int compType)
 {
   switch (compType) {
   case TINYGLTF_COMPONENT_TYPE_BYTE:

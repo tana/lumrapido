@@ -28,6 +28,8 @@ public:
 
   vsg::ref_ptr<RayTracingScene> scene;
 
+  const size_t MAX_NUM_TEXTURES = 32;
+
 protected:
   vsg::Device* device;
   
@@ -44,6 +46,7 @@ protected:
   vsg::ref_ptr<vsg::DescriptorAccelerationStructure> tlasDescriptor;
   vsg::ref_ptr<vsg::DescriptorImage> targetImageDescriptor;
   vsg::ref_ptr<vsg::DescriptorBuffer> uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor;
+  vsg::ref_ptr<vsg::DescriptorImage> textureDescriptor;
   vsg::ref_ptr<vsg::DescriptorSet> descriptorSet;
   vsg::ref_ptr<vsg::PipelineLayout> pipelineLayout;
   vsg::ref_ptr<vsg::RayTracingPipeline> rayTracingPipeline;

@@ -57,6 +57,13 @@ uint32_t RayTracingScene::addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::
   return id;
 }
 
+uint32_t RayTracingScene::addTexture(vsg::ImageInfo imageInfo)
+{
+  textures.push_back(imageInfo);
+
+  return uint32_t(textures.size() - 1);
+}
+
 vsg::ref_ptr<vsg::Array<ObjectInfo>> RayTracingScene::getObjectInfo() const
 {
   auto arr = vsg::Array<ObjectInfo>::create(uint32_t(objectInfoList.size()));
