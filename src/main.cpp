@@ -74,6 +74,8 @@ int main(int argc, char* argv[])
   // Use VSG's option parser to handle command line arguments
   vsg::CommandLine arguments(&argc, argv);
   bool useDebugLayer = arguments.read({ "--debug" });
+  auto cameraPos = arguments.value(vsg::dvec3(0.0, 0.0, 1.0), { "--camera", "-c" });
+  auto lookAtPos = arguments.value(vsg::dvec3(0.0, 0.0, 0.0), { "--lookat", "-l" });
 
   std::string gltfFile;
   // Flags such as "--debug" are removed by arguments.read calls above
@@ -133,7 +135,7 @@ int main(int argc, char* argv[])
   viewer->addWindow(window);
 
   auto perspective = vsg::Perspective::create(90.0, double(SCREEN_WIDTH) / double(SCREEN_HEIGHT), 0.1, 1000.0);
-  auto lookAt = vsg::LookAt::create(vsg::dvec3(0, 0, 0), vsg::dvec3(0, 0, -1), vsg::dvec3(0, 1, 0));
+  auto lookAt = vsg::LookAt::create(cameraPos, lookAtPos, vsg::dvec3(0, 1, 0));
   auto camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 
   viewer->addEventHandler(vsg::CloseHandler::create(viewer));

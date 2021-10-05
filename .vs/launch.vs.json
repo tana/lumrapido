@@ -9,7 +9,11 @@
       "name": "VSGRayTracer.exe",
       "args": [
         "--debug",
-        "../../../data/Duck.glb"
+        "-c",
+        "0 0.03 0.05",
+        "-l",
+        "0 0.03 0",
+        "../../../data/Avocado.glb"
       ]
     }
   ]
