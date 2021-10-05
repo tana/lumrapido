@@ -122,13 +122,19 @@ bool GLTFLoader::loadPrimitive(const tinygltf::Primitive& primitive, const tinyg
   auto vertices = readGLTFBuffer<vsg::vec3>(primitive.attributes.at("POSITION"), model);
   auto normals = readGLTFBuffer<vsg::vec3>(primitive.attributes.at("NORMAL"), model);
   auto texCoords = readGLTFBuffer<vsg::vec2>(primitive.attributes.at("TEXCOORD_0"), model);
+  vsg::ref_ptr<vsg::vec4Array> tangents;
+  if (primitive.attributes.find("TANGENT") != primitive.attributes.end()) { // Object contains tangent data
+    tangents = readGLTFBuffer<vsg::vec4>(primitive.attributes.at("TANGENT"), model);
+  } else {
+    tangents = vsg::vec4Array::create(vertices->valueCount());
+  }
 
   std::optional<RayTracingMaterial> material = loadMaterial(model.materials[primitive.material], model);
   if (!material) {
     return false;
   }
 
-  scene->addMesh(transform, indices, vertices, normals, texCoords, material.value());
+  scene->addMesh(transform, indices, vertices, normals, texCoords, tangents, material.value());
 
   return true;
 }

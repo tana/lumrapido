@@ -41,6 +41,7 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
   auto vertices = scene->getVertices();
   auto normals = scene->getNormals();
   auto texCoords = scene->getTexCoords();
+  auto tangents = scene->getTangents();
 
   // Create a target image for rendering
   targetImage = vsg::Image::create();
@@ -80,6 +81,8 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
     { 6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
     // Binding 7 is array of texture coords of all objects combined
     { 7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Binding 8 is array of tangents of all objects combined
+    { 8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
     // Binding 10 is textures
     { 10, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(MAX_NUM_TEXTURES), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr }
   };
@@ -94,6 +97,7 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
   verticesDescriptor = vsg::DescriptorBuffer::create(vertices, 5, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 5
   normalsDescriptor = vsg::DescriptorBuffer::create(normals, 6, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 6
   texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoords, 7, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 7
+  tangentsDescriptor = vsg::DescriptorBuffer::create(tangents, 8, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 8
 
   // Prepare descriptor for texture
   auto emptyImageData = vsg::vec3Array2D::create(1, 1, vsg::Data::Layout{ VK_FORMAT_R32G32B32_SFLOAT });
@@ -110,7 +114,7 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
   textureDescriptor = vsg::DescriptorImage::create(imageInfoList, 10, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Binding 10
 
   // Combine descriptor into a descriptor set
-  descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, textureDescriptor });
+  descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, textureDescriptor });
 
   // Create ray tracing pipeline
   pipelineLayout = vsg::PipelineLayout::create(vsg::DescriptorSetLayouts{ descriptorLayout }, vsg::PushConstantRanges{});

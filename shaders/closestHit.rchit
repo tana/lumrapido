@@ -30,6 +30,9 @@ layout(binding = 6, scalar) readonly buffer Normals {
 layout(binding = 7, scalar) readonly buffer TexCoords {
   vec2 texCoords[];
 };
+layout(binding = 8, scalar) readonly buffer Tangents {
+  vec4 tangents[];
+};
 
 layout(binding = 10) uniform sampler2D textures[MAX_NUM_TEXTURES];
 
@@ -106,13 +109,17 @@ void main()
   vec2 texCoord0 = texCoords[vertexOffset + idx0];
   vec2 texCoord1 = texCoords[vertexOffset + idx1];
   vec2 texCoord2 = texCoords[vertexOffset + idx2];
+  // Tangent vectors of each vertices
+  vec4 tangent0 = tangents[vertexOffset + idx0];
+  vec4 tangent1 = tangents[vertexOffset + idx1];
+  vec4 tangent2 = tangents[vertexOffset + idx2];
 
   Material material = objectInfos[gl_InstanceID].material;
 
   bool isFront = gl_HitKindEXT == gl_HitKindFrontFacingTriangleEXT;
   
   // Normal vector in object coordinate (interpolated from barycentric coords)
-  vec3 normalObj = (1.0 - uv.x - uv.y) * normal0 + uv.x * normal1 + uv.y * normal2;
+  vec3 normalObj = interpolate(normal0, normal1, normal2, uv);
   // Normal vector in world coordinate
   vec3 normal = normalize(gl_ObjectToWorldEXT * vec4(normalObj, 0.0));
   // Reverse normal vector if the surface is facing back
@@ -121,7 +128,10 @@ void main()
   }
 
   // Interpolate texture coord
-  vec2 texCoord = (1.0 - uv.x - uv.y) * texCoord0 + uv.x * texCoord1 + uv.y * texCoord2;
+  vec2 texCoord = interpolate(texCoord0, texCoord1, texCoord2, uv);
+
+  // Interpolate tangent (assuming all tangent vectors of a triangle have same w component)
+  vec4 tangent = interpolate(tangent0, tangent1, tangent2, uv);
 
   // Calculate base color
   vec3 color = material.color;

@@ -80,3 +80,19 @@ bool nearZero(in vec3 v)
 {
   return (abs(v.x) < EPSILON) && (abs(v.y) < EPSILON) && (abs(v.z) < EPSILON);
 }
+
+// Interpolation using barycentric coordinates
+vec2 interpolate(in vec2 v0, in vec2 v1, in vec2 v2, in vec2 uv)
+{
+  return (1.0 - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
+}
+
+vec3 interpolate(in vec3 v0, in vec3 v1, in vec3 v2, in vec2 uv)
+{
+  return (1.0 - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
+}
+
+vec4 interpolate(in vec4 v0, in vec4 v1, in vec4 v2, in vec2 uv)
+{
+  return (1.0 - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
+}

@@ -25,6 +25,8 @@ class RayTracingScene : public vsg::Inherit<vsg::Object, RayTracingScene>
 public:
   RayTracingScene(vsg::Device* device);
 
+  uint32_t addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::ushortArray> indices, vsg::ref_ptr<vsg::vec3Array> vertices, vsg::ref_ptr<vsg::vec3Array> normals, vsg::ref_ptr<vsg::vec2Array> texCoords, vsg::ref_ptr<vsg::vec4Array> tangents, const RayTracingMaterial& material);
+  // For meshes without tangent vectors
   uint32_t addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::ushortArray> indices, vsg::ref_ptr<vsg::vec3Array> vertices, vsg::ref_ptr<vsg::vec3Array> normals, vsg::ref_ptr<vsg::vec2Array> texCoords, const RayTracingMaterial& material);
 
   uint32_t addTexture(vsg::ImageInfo imageInfo);
@@ -34,6 +36,7 @@ public:
   vsg::ref_ptr<vsg::vec3Array> getVertices() const;
   vsg::ref_ptr<vsg::vec3Array> getNormals() const;
   vsg::ref_ptr<vsg::vec2Array> getTexCoords() const;
+  vsg::ref_ptr<vsg::vec4Array> getTangents() const;
 
   vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas;
 
@@ -47,6 +50,7 @@ private:
   std::vector<vsg::ref_ptr<vsg::vec3Array>> verticesList;
   std::vector<vsg::ref_ptr<vsg::vec3Array>> normalsList;
   std::vector<vsg::ref_ptr<vsg::vec2Array>> texCoordsList;
+  std::vector<vsg::ref_ptr<vsg::vec4Array>> tangentsList;
 
   uint32_t numIndices;
   uint32_t numVertices;
