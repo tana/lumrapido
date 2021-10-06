@@ -18,7 +18,7 @@
 const int SCREEN_WIDTH = 800;
 const int SCREEN_HEIGHT = 450;
 
-const uint32_t SAMPLES_PER_PIXEL = 100;
+const uint32_t DEFAULT_SAMPLES_PER_PIXEL = 100;
 
 const int FPS_MEASURE_COUNT = 100;
 
@@ -76,6 +76,7 @@ int main(int argc, char* argv[])
   bool useDebugLayer = arguments.read({ "--debug" });
   auto cameraPos = arguments.value(vsg::dvec3(0.0, 0.0, 1.0), { "--camera", "-c" });
   auto lookAtPos = arguments.value(vsg::dvec3(0.0, 0.0, 0.0), { "--lookat", "-l" });
+  uint32_t samplesPerPixel = arguments.value(DEFAULT_SAMPLES_PER_PIXEL, { "--samples", "-s" });
 
   std::string gltfFile;
   // Flags such as "--debug" are removed by arguments.read calls above
@@ -141,7 +142,7 @@ int main(int argc, char* argv[])
   viewer->addEventHandler(vsg::CloseHandler::create(viewer));
   viewer->addEventHandler(vsg::Trackball::create(camera));
 
-  rayTracer->setSamplesPerPixel(SAMPLES_PER_PIXEL);
+  rayTracer->setSamplesPerPixel(samplesPerPixel);
 
   // Ray generation shader uses inverse of projection and view matrices
   vsg::dmat4 viewMat, projectionMat;
