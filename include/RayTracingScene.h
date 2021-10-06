@@ -29,7 +29,8 @@ public:
   // For meshes without tangent vectors
   uint32_t addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::ushortArray> indices, vsg::ref_ptr<vsg::vec3Array> vertices, vsg::ref_ptr<vsg::vec3Array> normals, vsg::ref_ptr<vsg::vec2Array> texCoords, const RayTracingMaterial& material);
 
-  uint32_t addTexture(vsg::ImageInfo imageInfo);
+  uint32_t addTexture(const vsg::ImageInfo& imageInfo);
+  uint32_t addTexture(vsg::ref_ptr<vsg::Data> imageData, vsg::ref_ptr<vsg::Sampler> sampler);
 
   vsg::ref_ptr<vsg::Array<ObjectInfo>> getObjectInfo() const;
   vsg::ref_ptr<vsg::ushortArray> getIndices() const;

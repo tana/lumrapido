@@ -65,11 +65,22 @@ uint32_t RayTracingScene::addMesh(const vsg::mat4& transform, vsg::ref_ptr<vsg::
   return addMesh(transform, indices, vertices, normals, texCoords, tangents, material);
 }
 
-uint32_t RayTracingScene::addTexture(vsg::ImageInfo imageInfo)
+uint32_t RayTracingScene::addTexture(const vsg::ImageInfo& imageInfo)
 {
   textures.push_back(imageInfo);
 
   return uint32_t(textures.size() - 1);
+}
+
+uint32_t RayTracingScene::addTexture(vsg::ref_ptr<vsg::Data> imageData, vsg::ref_ptr<vsg::Sampler> sampler)
+{
+  auto image = vsg::Image::create(imageData);
+  image->usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+  image->tiling = VK_IMAGE_TILING_LINEAR;
+
+  auto imageView = vsg::ImageView::create(image);
+
+  return addTexture(vsg::ImageInfo(sampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
 }
 
 vsg::ref_ptr<vsg::Array<ObjectInfo>> RayTracingScene::getObjectInfo() const

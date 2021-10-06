@@ -175,38 +175,69 @@ std::optional<uint32_t> GLTFLoader::loadTexture(const tinygltf::Texture& gltfTex
   
   vsg::ref_ptr<vsg::Data> imageData = readImageData(gltfImage.image, gltfImage.width, gltfImage.height, gltfImage.component, gltfImage.pixel_type);
 
-  auto image = vsg::Image::create(imageData);
-  image->usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-  image->format = VK_FORMAT_R32G32B32_SFLOAT;
-  image->tiling = VK_IMAGE_TILING_LINEAR;
-  auto imageView = vsg::ImageView::create(image);
   auto sampler = vsg::Sampler::create();
   // TODO: sampler setting
 
-  return scene->addTexture(vsg::ImageInfo(sampler, imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL));
+  return scene->addTexture(imageData, sampler);
 }
 
-vsg::ref_ptr<vsg::vec3Array2D> GLTFLoader::readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType)
+vsg::ref_ptr<vsg::Data> GLTFLoader::readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType)
 {
-  // Image format have to be specified in vsg::Array2D creation.
+  vsg::ref_ptr<vsg::Data> imageData;
+
+  // Image format have to be specified in the layout of a vsg::Data.
   // It did not work when tried with format property of vsg::Image only.
   //  See: https://github.com/vsg-dev/vsgXchange/blob/fb0f0754b72112edb821814f28d25a070790a89a/src/stbi/stbi.cpp#L134
-  auto imageData = vsg::vec3Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32G32B32_SFLOAT });
 
-  size_t compSize = sizeOfGLTFComponentType(compType);
-
-  vsg::vec3 pixelValue;
-
-  for (size_t i = 0; i < height; ++i) {
-    for (size_t j = 0; j < width; ++j) {
-      for (int k = 0; k < std::min(numComp, 3); ++k) {
-        size_t pos = ((i * width + j) * numComp + k) * compSize;
-        // TODO: Support component types other than 8-bit (scaling other than 256)
-        pixelValue[k] = readComponentAndConvert<float>(data, pos, compType) / 256.0f;
-      }
-      imageData->at(i * width + j) = pixelValue;
+  if (numComp == 1) {
+    switch (compType) {
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+      imageData = vsg::ubyteArray2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R8_UNORM });
+      break;
+    case TINYGLTF_COMPONENT_TYPE_FLOAT:
+      imageData = vsg::floatArray2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32_SFLOAT });
+      break;
+    default:
+      return {};  // Unsupported component type
     }
+  } else if (numComp == 2) {
+    switch (compType) {
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+      imageData = vsg::ubvec2Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R8G8_UNORM });
+      break;
+    case TINYGLTF_COMPONENT_TYPE_FLOAT:
+      imageData = vsg::vec2Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32G32_SFLOAT });
+      break;
+    default:
+      return {};  // Unsupported component type
+    }
+  } else if (numComp == 3) {
+    switch (compType) {
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+      imageData = vsg::ubvec3Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R8G8B8_UNORM });
+      break;
+    case TINYGLTF_COMPONENT_TYPE_FLOAT:
+      imageData = vsg::vec3Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32G32B32_SFLOAT });
+      break;
+    default:
+      return {};  // Unsupported component type
+    }
+  } else if (numComp == 4) {
+    switch (compType) {
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+      imageData = vsg::ubvec4Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R8G8B8A8_UNORM });
+      break;
+    case TINYGLTF_COMPONENT_TYPE_FLOAT:
+      imageData = vsg::vec4Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32G32B32A32_SFLOAT });
+      break;
+    default:
+      return {};  // Unsupported component type
+    }
+  } else {
+    return {};  // Unsupported number of components
   }
+
+  std::memcpy(imageData->dataPointer(), data.data(), imageData->dataSize());
 
   return imageData;
 }

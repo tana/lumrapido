@@ -24,7 +24,7 @@ protected:
   std::optional<uint32_t> loadTexture(const tinygltf::Texture& gltfTexture, const tinygltf::Model& model);
 
   // Read image data and convert into a RGB float array, regardless of original format
-  vsg::ref_ptr<vsg::vec3Array2D> readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType);
+  vsg::ref_ptr<vsg::Data> readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType);
 
   vsg::ref_ptr<RayTracingScene> scene;
 };
