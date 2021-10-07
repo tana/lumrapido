@@ -18,5 +18,5 @@ struct RayTracingMaterial
   float ior = 1.0f;  // Index of Refraction
   float metallic = 0.0f;
   float roughness = 0.0f;
-  int32_t colorTextureIdx;
+  int32_t colorTextureIdx = -1;
 };

@@ -1,7 +1,11 @@
 #include "utils.h"
 
 #include <cmath>
+#include <iostream>
+#include <vsg/core/Array2D.h>
 #include <vsg/maths/transform.h>
+#define TINYEXR_IMPLEMENTATION
+#include "tinyexr.h"
 
 vsg::ref_ptr<vsg::Node> createSphere(vsg::vec3 center, float radius)
 {
@@ -62,4 +66,23 @@ vsg::ref_ptr<vsg::Node> createQuad(vsg::vec3 center, vsg::vec3 normal, vsg::vec3
   geomInfo.transform = vsg::lookAt(center, center + normal, up);
 
   return builder->createQuad(geomInfo);
+}
+
+vsg::ref_ptr<vsg::Data> loadEXRTexture(const std::string& path)
+{
+  float* data;
+  int width, height;
+  const char* error;
+  if (LoadEXR(&data, &width, &height, path.c_str(), &error) != TINYEXR_SUCCESS) {
+    std::cout << error << std::endl;
+    FreeEXRErrorMessage(error);
+    return {};  // EXR load failure
+  }
+
+  auto arr = vsg::vec4Array2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32G32B32A32_SFLOAT });
+  memcpy(arr->dataPointer(), data, arr->dataSize());
+
+  free(data);
+
+  return arr;
 }

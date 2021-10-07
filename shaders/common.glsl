@@ -48,6 +48,7 @@ struct RayTracingUniform
   mat4 invViewMat; // Inverse of view matrix (i.e. transform camera coordinate to world coordinate)
   mat4 invProjectionMat; // Inverse of projection matrix (i.e. transform normalized device coordinate into camera coordinate)
   uint samplesPerPixel; // How many rays are sampled to render one pixel
+  int envMapTextureIdx; // Index of environment map texture (negative when there is no environment map)
 };
 
 // Pseudo-random number using Xorshift (xor128)
@@ -95,4 +96,14 @@ vec3 interpolate(in vec3 v0, in vec3 v1, in vec3 v2, in vec2 uv)
 vec4 interpolate(in vec4 v0, in vec4 v1, in vec4 v2, in vec2 uv)
 {
   return (1.0 - uv.x - uv.y) * v0 + uv.x * v1 + uv.y * v2;
+}
+
+// atan(y, x) with handling of x==0
+// Because GLSL atan(y, x) is undefined when x==0.
+// See:
+//  https://www.khronos.org/registry/OpenGL-Refpages/gl4/html/atan.xhtml
+//  https://qiita.com/7CIT/items/ad76cfa6771641951d31
+float safeAtan(in float y, in float x)
+{
+  return (abs(x) > EPSILON) ? atan(y, x) : (sign(y) * PI / 2.0);
 }

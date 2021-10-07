@@ -77,6 +77,7 @@ int main(int argc, char* argv[])
   auto cameraPos = arguments.value(vsg::dvec3(0.0, 0.0, 1.0), { "--camera", "-c" });
   auto lookAtPos = arguments.value(vsg::dvec3(0.0, 0.0, 0.0), { "--lookat", "-l" });
   uint32_t samplesPerPixel = arguments.value(DEFAULT_SAMPLES_PER_PIXEL, { "--samples", "-s" });
+  std::string envMapFile = arguments.value<std::string>("", { "--envmap", "-e" });
 
   std::string gltfFile;
   // Flags such as "--debug" are removed by arguments.read calls above
@@ -128,6 +129,16 @@ int main(int argc, char* argv[])
   } else {
     // Use default scene
     scene = createDefaultScene(device);
+  }
+
+  if (!envMapFile.empty()) {
+    auto envMap = loadEXRTexture(envMapFile);
+    if (!envMap) {
+      std::cerr << "Environment map load error" << std::endl;
+      return -1;
+    }
+    
+    scene->envMapTextureIdx = scene->addTexture(envMap, vsg::Sampler::create());
   }
 
   auto rayTracer = RayTracer::create(device, SCREEN_WIDTH, SCREEN_HEIGHT, scene);

@@ -43,6 +43,8 @@ public:
 
   vsg::ImageInfoList textures;
 
+  int32_t envMapTextureIdx = -1;
+
 private:
   vsg::Device* device;
 
