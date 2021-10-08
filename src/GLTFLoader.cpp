@@ -166,6 +166,20 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
     material.colorTextureIdx = -1;
   }
 
+  if (pbr.metallicRoughnessTexture.index >= 0) {  // Has a metallic/roughness texture
+    if (pbr.metallicRoughnessTexture.texCoord != 0) {
+      return std::nullopt;  // Only TEXCOORD_0 is supported
+    }
+
+    auto textureIdx = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model);
+    if (!textureIdx) {
+      return std::nullopt;
+    }
+    material.metallicRoughnessTextureIdx = textureIdx.value();
+  } else {
+    material.metallicRoughnessTextureIdx = -1;
+  }
+
   return material;
 }
 

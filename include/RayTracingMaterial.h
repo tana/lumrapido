@@ -19,4 +19,5 @@ struct RayTracingMaterial
   float metallic = 0.0f;
   float roughness = 0.0f;
   int32_t colorTextureIdx = -1;
+  int32_t metallicRoughnessTextureIdx = -1;
 };

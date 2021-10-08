@@ -139,6 +139,15 @@ void main()
     color *= texture(textures[material.colorTextureIdx], texCoord).xyz;
   }
 
+  // Calculate metallic and roughness
+  float metallic = material.metallic;
+  float roughness = material.roughness;
+  if (material.metallicRoughnessTextureIdx >= 0) {  // If the object has a metallic/roughness texture
+    vec4 metallicRoughness = texture(textures[material.metallicRoughnessTextureIdx], texCoord);
+    metallic *= metallicRoughness.b;
+    roughness *= metallicRoughness.g;
+  }
+
   // Point of intersection
   vec3 hitPoint = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
   // Normalized direction of incoming ray
@@ -186,17 +195,17 @@ void main()
     vec3 viewVec = -unitRayDir;
     float dotNV = dot(normal, viewVec);
 
-    if (randomFloat(payload.randomState, 0.0, 1.0) < material.metallic) { // Specular
+    if (randomFloat(payload.randomState, 0.0, 1.0) < metallic) { // Specular
       // Fresnel factor F(v,h)
-      vec3 f0 = mix(vec3(0.04), color, material.metallic);
+      vec3 f0 = mix(vec3(0.04), color, metallic);
 
       // Sample a halfway vector from GGX NDF
-      vec3 halfwayVec = sampleGGX(payload.randomState, viewVec, normal, material.roughness);
+      vec3 halfwayVec = sampleGGX(payload.randomState, viewVec, normal, roughness);
       // Calculate light vector from halfway vector
       lightVec = reflect(-viewVec, halfwayVec);
 
       // Geometric attenuation term G(l,v,h)
-      float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, material.roughness);
+      float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, roughness);
 
       if (dot(lightVec, normal) <= 0.0 || dot(lightVec, halfwayVec) <= 0.0) { // Not reflecting
         payload.color = vec3(0.0);
@@ -208,7 +217,7 @@ void main()
       float dotVH = dot(viewVec, halfwayVec);
       float dotNH = dot(normal, halfwayVec);
 
-      payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / material.metallic;
+      payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / metallic;
     } else {  // Diffuse
       lightVec = normal + randomPointInUnitSphere(payload.randomState);
       if (nearZero(lightVec)) {

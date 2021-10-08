@@ -19,6 +19,7 @@ struct Material
   float metallic;
   float roughness;
   int colorTextureIdx;
+  int metallicRoughnessTextureIdx;
 };
 
 struct ObjectInfo
