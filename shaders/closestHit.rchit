@@ -195,7 +195,7 @@ void main()
     vec3 viewVec = -unitRayDir;
     float dotNV = dot(normal, viewVec);
 
-    if (randomFloat(payload.randomState, 0.0, 1.0) < metallic) { // Specular
+    if (randomFloat(payload.randomState, 0.0, 1.0) < 0.5) { // Specular
       // Fresnel factor F(v,h)
       vec3 f0 = mix(vec3(0.04), color, metallic);
 
@@ -217,14 +217,14 @@ void main()
       float dotVH = dot(viewVec, halfwayVec);
       float dotNH = dot(normal, halfwayVec);
 
-      payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / metallic;
+      payload.color *= 2.0 * fresnel * geometricAttenuation * dotVH / (dotNV * dotNH);
     } else {  // Diffuse
       lightVec = normal + randomPointInUnitSphere(payload.randomState);
       if (nearZero(lightVec)) {
         lightVec = normal;
       }
 
-      payload.color *= color / PI;
+      payload.color *= 2.0 * (1 - metallic) * color / PI;
     }
 
     // Trace next ray
