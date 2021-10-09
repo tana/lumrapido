@@ -2,3 +2,5 @@
 !.vs/launch.vs.json
 CMakeSettings.json
 out/
+
+*.blend1

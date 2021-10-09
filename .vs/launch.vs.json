@@ -9,13 +9,9 @@
       "name": "VSGRayTracer.exe",
       "args": [
         "--debug",
-        "-c",
-        "0 0.03 0.05",
-        "-l",
-        "0 0.03 0",
         "-e",
-        "../../../data/studio_garden_2k.exr",
-        "../../../data/Avocado.glb"
+        "../../../test_scenes/white_env.exr",
+        "../../../test_scenes/cornell_box.glb"
       ]
     }
   ]
