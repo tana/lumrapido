@@ -40,6 +40,9 @@ lumrapido [OPTIONS] GLTF_FILE
 - `-s SAMPLES_PER_PIXEL`: Set number of samples per pixel.
 - `-c "X Y Z"`: Set initial camera position.
 - `-l "X Y Z"`: Set initial target position of the camera.
+- `-u "X Y Z"`: Set upward direction of the camera.
+- `-W WIDTH`: Set window width.
+- `-H HEIGHT`: Set window height.
 - `--debug`: Enable Vulkan validation layer (for debugging).
 
 

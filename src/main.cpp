@@ -15,8 +15,8 @@
 // Vulkan-specific designs are based on NVIDIA Vulkan Ray Tracing tutorial:
 //  https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/
 
-const int SCREEN_WIDTH = 800;
-const int SCREEN_HEIGHT = 450;
+const int DEFAULT_SCREEN_WIDTH = 800;
+const int DEFAULT_SCREEN_HEIGHT = 450;
 
 const uint32_t DEFAULT_SAMPLES_PER_PIXEL = 100;
 
@@ -76,8 +76,11 @@ int main(int argc, char* argv[])
   bool useDebugLayer = arguments.read({ "--debug" });
   auto cameraPos = arguments.value(vsg::dvec3(0.0, 0.0, 1.0), { "--camera", "-c" });
   auto lookAtPos = arguments.value(vsg::dvec3(0.0, 0.0, 0.0), { "--lookat", "-l" });
+  auto cameraUpVec = arguments.value(vsg::dvec3(0.0, 1.0, 0.0), { "--camera-up", "-u" });
   uint32_t samplesPerPixel = arguments.value(DEFAULT_SAMPLES_PER_PIXEL, { "--samples", "-s" });
   std::string envMapFile = arguments.value<std::string>("", { "--envmap", "-e" });
+  int screenWidth = arguments.value<int>(DEFAULT_SCREEN_WIDTH, { "--screen-width", "-W" });
+  int screenHeight = arguments.value<int>(DEFAULT_SCREEN_HEIGHT, { "--screen-height", "-H" });
 
   std::string gltfFile;
   // Flags such as "--debug" are removed by arguments.read calls above
@@ -85,7 +88,7 @@ int main(int argc, char* argv[])
     gltfFile = arguments[1];
   }
 
-  auto windowTraits = vsg::WindowTraits::create(SCREEN_WIDTH, SCREEN_HEIGHT, "VSGRayTracer");
+  auto windowTraits = vsg::WindowTraits::create(screenWidth, screenHeight, "VSGRayTracer");
   windowTraits->queueFlags = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;  // Because ray tracing needs compute queue. See: https://www.khronos.org/registry/vulkan/specs/1.2-extensions/man/html/vkCmdTraceRaysKHR.html#VkQueueFlagBits
   windowTraits->swapchainPreferences.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;  // The screen can be target of image-to-image copy
   // Ray tracing requires Vulkan 1.1
@@ -141,13 +144,13 @@ int main(int argc, char* argv[])
     scene->envMapTextureIdx = scene->addTexture(envMap, vsg::Sampler::create());
   }
 
-  auto rayTracer = RayTracer::create(device, SCREEN_WIDTH, SCREEN_HEIGHT, scene);
+  auto rayTracer = RayTracer::create(device, screenWidth, screenHeight, scene);
 
   auto viewer = vsg::Viewer::create();
   viewer->addWindow(window);
 
-  auto perspective = vsg::Perspective::create(90.0, double(SCREEN_WIDTH) / double(SCREEN_HEIGHT), 0.1, 1000.0);
-  auto lookAt = vsg::LookAt::create(cameraPos, lookAtPos, vsg::dvec3(0, 1, 0));
+  auto perspective = vsg::Perspective::create(90.0, double(screenWidth) / double(screenHeight), 0.1, 1000.0);
+  auto lookAt = vsg::LookAt::create(cameraPos, lookAtPos, cameraUpVec);
   auto camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 
   viewer->addEventHandler(vsg::CloseHandler::create(viewer));
