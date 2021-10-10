@@ -224,7 +224,8 @@ void main()
         lightVec = normal;
       }
 
-      payload.color *= 2.0 * (1 - metallic) * color / PI;
+      // (2.0 * (1 - metallic) * (color / PI) * dotNV) / (dotNV / PI)
+      payload.color *= 2.0 * (1 - metallic) * color;
     }
 
     // Trace next ray
