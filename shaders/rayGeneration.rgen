@@ -23,7 +23,6 @@ void main()
   vec3 meanColor = vec3(0.0);
 
   for (int i = 0; i < uniforms.samplesPerPixel; i++) {
-#if 1
     // Random jitter added to pixel coordinate for antialiasing
     vec2 jitter = vec2(randomFloat(payload.randomState, 0.0, 1.0), randomFloat(payload.randomState, 0.0, 1.0));
     // Pixel position in normalized device coordinate (-1 <= x,y <= 1)
@@ -34,19 +33,6 @@ void main()
     vec3 direction = (uniforms.invViewMat * directionCam).xyz;
     // Ray origin (camera position) in world coordinate
     vec3 origin = (uniforms.invViewMat * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
-#else
-    float focalLength = 1.0;
-    float viewportHeight = 2.0;
-    float viewportWidth = viewportHeight * float(gl_LaunchSizeEXT.x) / float(gl_LaunchSizeEXT.y);
-    float u = (float(gl_LaunchIDEXT.x) + randomFloat(payload.randomState, 0.0, 1.0)) / float(gl_LaunchSizeEXT.x - 1);
-    float v = 1.0 - (float(gl_LaunchIDEXT.y) + randomFloat(payload.randomState, 0.0, 1.0)) / float(gl_LaunchSizeEXT.y - 1);
-    // Point on the image plane
-    float x = viewportWidth * u - viewportWidth / 2.0;
-    float y = viewportHeight * v - viewportHeight / 2.0;
-  
-    vec3 origin = vec3(0.0, 0.0, 0.0);
-    vec3 direction = vec3(x, y, -1.0);
-#endif
 
     int depth = 0;
     payload.color = vec3(1.0);
