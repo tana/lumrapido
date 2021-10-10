@@ -5,8 +5,8 @@
     {
       "type": "default",
       "project": "CMakeLists.txt",
-      "projectTarget": "VSGRayTracer.exe",
-      "name": "VSGRayTracer.exe",
+      "projectTarget": "lumrapido.exe",
+      "name": "lumrapido.exe",
       "args": [
         "--debug",
         "-e",
