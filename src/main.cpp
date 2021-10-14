@@ -26,22 +26,18 @@ vsg::ref_ptr<RayTracingScene> createDefaultScene(vsg::Device* device)
 {
   // Define materials used in the scene
   RayTracingMaterial groundMaterial;
-  groundMaterial.type = RT_MATERIAL_PBR;
   groundMaterial.color = vsg::vec3(0.8f, 0.8f, 0.0f);
   groundMaterial.roughness = 1.0f;
   groundMaterial.metallic = 0.0f;
   RayTracingMaterial centerMaterial;
-  centerMaterial.type = RT_MATERIAL_PBR;
   centerMaterial.color = vsg::vec3(0.1f, 0.2f, 0.5f);
   centerMaterial.roughness = 0.1f;
   centerMaterial.metallic = 0.0f;
   RayTracingMaterial leftMaterial;
-  leftMaterial.type = RT_MATERIAL_PBR;
   leftMaterial.color = vsg::vec3(1.0f, 1.0f, 1.0f);
   leftMaterial.roughness = 0.5f;
   leftMaterial.metallic = 1.0f;
   RayTracingMaterial rightMaterial;
-  rightMaterial.type = RT_MATERIAL_PBR;
   rightMaterial.color = vsg::vec3(0.8f, 0.6f, 0.2f);
   rightMaterial.roughness = 0.0f;
   rightMaterial.metallic = 1.0f;

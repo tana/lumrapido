@@ -171,84 +171,47 @@ void main()
   // Normalized direction of incoming ray
   vec3 unitRayDir = normalize(gl_WorldRayDirectionEXT);
 
-  if (material.type == RT_MATERIAL_LAMBERT) {
-    // Randomly generate a new ray
-    payload.nextDirection = sampleHemisphereCosine(payload.randomState, -unitRayDir, normal);
-    payload.nextOrigin = hitPoint;
-    // Signal the caller (ray generation shader) to trace next ray, instead of recursively tracing
-    payload.color *= color;
-    payload.traceNextRay = true;
-  } else if (material.type == RT_MATERIAL_METAL) {
-    vec3 reflectedDir = reflect(unitRayDir, normal) + material.fuzz * randomPointInUnitSphere(payload.randomState);
-    if (dot(reflectedDir, normal) > 0) {
-      payload.nextDirection = reflectedDir;
-      payload.nextOrigin = hitPoint;
-      payload.color *= color;
-      payload.traceNextRay = true;
-    } else {  // When the reflected ray goes inside the object
+  vec3 lightVec;  // Vector of incoming light (from point on the point of intersection to light source or another object)
+
+  // Vector towards the camera
+  vec3 viewVec = -unitRayDir;
+  float dotNV = dot(normal, viewVec);
+
+  // Probability of sampling specular reflection
+  float specularProb = mix(0.3, 1.0, metallic);
+
+  if (randomFloat(payload.randomState, 0.0, 1.0) < specularProb) { // Specular
+    // Fresnel factor F(v,h)
+    vec3 f0 = mix(vec3(0.04), color, metallic);
+
+    // Sample a halfway vector from GGX NDF
+    vec3 halfwayVec = sampleGGX(payload.randomState, viewVec, normal, roughness);
+    // Calculate light vector from halfway vector
+    lightVec = reflect(-viewVec, halfwayVec);
+
+    // Geometric attenuation term G(l,v,h)
+    float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, roughness);
+
+    if (dot(lightVec, normal) <= 0.0 || dot(lightVec, halfwayVec) <= 0.0) { // Not reflecting
       payload.color = vec3(0.0);
       payload.traceNextRay = false;
-    }
-  } else if (material.type == RT_MATERIAL_DIELECTRIC) {
-    float eta = isFront ? (1 / material.ior) : material.ior;
-    // sqrt(f0) = (n1-n2)/(n1+n2) = (eta-1)/(eta+1)
-    float sqrtF0 = (eta - 1) / (eta + 1);
-    float f0 = sqrtF0 * sqrtF0;
-    vec3 refractedDir = refract(unitRayDir, normal, eta);
-    float fresnel = fresnelSchlick(dot(-unitRayDir, normal), vec3(f0)).x;
-    if (nearZero(refractedDir) || fresnel > randomFloat(payload.randomState, 0.0, 1.0)) {
-      // Total internal reflection or Fresnel
-      refractedDir = reflect(unitRayDir, normal);
-    }
-    payload.nextDirection = refractedDir;
-    payload.nextOrigin = hitPoint;
-    payload.traceNextRay = true;
-  } else if (material.type == RT_MATERIAL_PBR) {
-    vec3 lightVec;  // Vector of incoming light (from point on the point of intersection to light source or another object)
-
-    // Vector towards the camera
-    vec3 viewVec = -unitRayDir;
-    float dotNV = dot(normal, viewVec);
-
-    // Probability of sampling specular reflection
-    float specularProb = mix(0.3, 1.0, metallic);
-
-    if (randomFloat(payload.randomState, 0.0, 1.0) < specularProb) { // Specular
-      // Fresnel factor F(v,h)
-      vec3 f0 = mix(vec3(0.04), color, metallic);
-
-      // Sample a halfway vector from GGX NDF
-      vec3 halfwayVec = sampleGGX(payload.randomState, viewVec, normal, roughness);
-      // Calculate light vector from halfway vector
-      lightVec = reflect(-viewVec, halfwayVec);
-
-      // Geometric attenuation term G(l,v,h)
-      float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, roughness);
-
-      if (dot(lightVec, normal) <= 0.0 || dot(lightVec, halfwayVec) <= 0.0) { // Not reflecting
-        payload.color = vec3(0.0);
-        payload.traceNextRay = false;
-        return;
-      }
-
-      vec3 fresnel = fresnelSchlick(dot(viewVec, halfwayVec), f0);
-      float dotVH = dot(viewVec, halfwayVec);
-      float dotNH = dot(normal, halfwayVec);
-
-      payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / specularProb;
-    } else {  // Diffuse
-      lightVec = sampleHemisphereCosine(payload.randomState, viewVec, normal);
-
-      // ((1 - metallic) * (color / PI) * dotNV) / (dotNV / PI) / (1 - specularProb)
-      payload.color *=  (1 - metallic) * color / (1 - specularProb);
+      return;
     }
 
-    // Trace next ray
-    payload.nextOrigin = hitPoint;
-    payload.nextDirection = lightVec;
-    payload.traceNextRay = true;
-  } else {  // Unknown material
-    payload.color *= vec3(0.0);
-    payload.traceNextRay = false;
+    vec3 fresnel = fresnelSchlick(dot(viewVec, halfwayVec), f0);
+    float dotVH = dot(viewVec, halfwayVec);
+    float dotNH = dot(normal, halfwayVec);
+
+    payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / specularProb;
+  } else {  // Diffuse
+    lightVec = sampleHemisphereCosine(payload.randomState, viewVec, normal);
+
+    // ((1 - metallic) * (color / PI) * dotNV) / (dotNV / PI) / (1 - specularProb)
+    payload.color *=  (1 - metallic) * color / (1 - specularProb);
   }
+
+  // Trace next ray
+  payload.nextOrigin = hitPoint;
+  payload.nextDirection = lightVec;
+  payload.traceNextRay = true;
 }

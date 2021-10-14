@@ -144,7 +144,6 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
   const tinygltf::PbrMetallicRoughness& pbr = gltfMaterial.pbrMetallicRoughness;
   
   RayTracingMaterial material;
-  material.type = RT_MATERIAL_PBR;
 
   material.color.r = float(pbr.baseColorFactor[0]);
   material.color.g = float(pbr.baseColorFactor[1]);

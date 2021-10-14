@@ -7,7 +7,7 @@
 #include "utils.h"
 
 SceneConversionTraversal::SceneConversionTraversal(vsg::Device* device)
-  : device(device), materialStack({ RayTracingMaterial { RT_MATERIAL_LAMBERT, vsg::vec3(1.0, 1.0, 1.0) } })
+  : device(device), materialStack({ RayTracingMaterial { vsg::vec3(1.0, 1.0, 1.0) } })
 {
   scene = RayTracingScene::create(device);
 }

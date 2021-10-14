@@ -5,17 +5,9 @@ const float PI = 3.14159265359;
 
 const int MAX_NUM_TEXTURES = 32;
 
-const int RT_MATERIAL_LAMBERT = 0;
-const int RT_MATERIAL_METAL = 1;
-const int RT_MATERIAL_DIELECTRIC = 2;
-const int RT_MATERIAL_PBR = 3;
-
 struct Material
 {
-  int type;
   vec3 color;
-  float fuzz;
-  float ior;
   float metallic;
   float roughness;
   int colorTextureIdx;
