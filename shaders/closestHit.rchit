@@ -77,7 +77,8 @@ vec3 sampleGGX(inout RandomState state, in vec3 viewVec, in vec3 normal, in floa
   vec3 tangent = normalize(cross(normal, viewVec));
   vec3 binormal = cross(tangent, normal);
   
-  return tangent * sin(theta) * cos(phi) + normal * cos(theta) + binormal * sin(theta) * sin(phi);
+  float sinTheta = sin(theta);  // Avoid calculating sin(theta) twice
+  return tangent * (sinTheta * cos(phi)) + normal * cos(theta) + binormal * (sinTheta * sin(phi));
 }
 
 // Schlick GGX Geometric attenuation term G(l,v,h)
@@ -90,6 +91,23 @@ float geometricAttenuationSchlick(in vec3 lightVec, in vec3 viewVec, in vec3 nor
   float g1L = dotNL / (dotNL * (1.0 - k) + k);
   float g1V = dotNV / (dotNV * (1.0 - k) + k);
   return g1L * g1V;
+}
+
+// Sample a random point on unit hemisphere from p(x,y,z)=cosÉ∆
+// See: https://shikihuiku.wordpress.com/2016/06/14/%E3%83%AC%E3%83%B3%E3%83%80%E3%83%AA%E3%83%B3%E3%82%B0%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8Bimportancesampling%E3%81%AE%E5%9F%BA%E7%A4%8E/ (in Japanese)
+// (Note: In the above article, it seems there is a mistake in equation of P(É”|É∆) and É”. However sample code is correct)
+vec3 sampleHemisphereCosine(inout RandomState state, in vec3 viewVec, in vec3 normal)
+{
+  float rand1 = randomFloat(state, 0.0, 1.0);
+  float rand2 = randomFloat(state, 0.0, 1.0);
+  // Sample in spherical coordinate
+  float theta = asin(sqrt(rand1));
+  float phi = 2 * PI * rand2;
+  // Convert into Cartesian coordinate
+  vec3 tangent = normalize(cross(normal, viewVec));
+  vec3 binormal = cross(tangent, normal);
+  float sinTheta = sin(theta);  // Avoid calculating sin(theta) twice
+  return tangent * (sinTheta * cos(phi)) + normal * cos(theta) + binormal * (sinTheta * sin(phi));
 }
 
 void main()
@@ -155,10 +173,7 @@ void main()
 
   if (material.type == RT_MATERIAL_LAMBERT) {
     // Randomly generate a new ray
-    payload.nextDirection = normal + normalize(randomPointInUnitSphere(payload.randomState));
-    if (nearZero(payload.nextDirection)) {
-      payload.nextDirection = normal;
-    }
+    payload.nextDirection = sampleHemisphereCosine(payload.randomState, -unitRayDir, normal);
     payload.nextOrigin = hitPoint;
     // Signal the caller (ray generation shader) to trace next ray, instead of recursively tracing
     payload.color *= color;
@@ -222,10 +237,7 @@ void main()
 
       payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / specularProb;
     } else {  // Diffuse
-      lightVec = normal + randomPointInUnitSphere(payload.randomState);
-      if (nearZero(lightVec)) {
-        lightVec = normal;
-      }
+      lightVec = sampleHemisphereCosine(payload.randomState, viewVec, normal);
 
       // ((1 - metallic) * (color / PI) * dotNV) / (dotNV / PI) / (1 - specularProb)
       payload.color *=  (1 - metallic) * color / (1 - specularProb);
