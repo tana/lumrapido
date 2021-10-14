@@ -40,18 +40,6 @@ layout(location = 0) rayPayloadInEXT RayPayload payload;
 
 hitAttributeEXT vec2 uv;  // Barycentric coordinate of the hit position inside a triangle
 
-// Sample a random point in a sphere with radius of 1
-vec3 randomPointInUnitSphere(inout RandomState state)
-{
-  // Rejection sampling
-  while (true) {
-    // Random point in a cube
-    vec3 point = vec3(randomFloat(state, -1.0, 1.0), randomFloat(state, -1.0, 1.0), randomFloat(state, -1.0, 1.0));
-    // Accept if the point is in a unit sphere
-    if (dot(point, point) < 1.0) return point;
-  }
-}
-
 // Calculate Fresnel term using Schlick's approximation
 // cosTheta = dot(vectorToEye, normal)
 vec3 fresnelSchlick(in float cosTheta, in vec3 f0)
@@ -64,12 +52,9 @@ vec3 fresnelSchlick(in float cosTheta, in vec3 f0)
 //  B. Walter et al., "Microfacet Models for Refraction through Rough Surfaces," in Proceedings of the 18th Eurographics conference on Rendering Techniques (EGSR'07), 2007, pp. 195-206.
 //  "Sampling microfacet BRDF," https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
 //  "Importance Sampling techniques for GGX with Smith Masking-Shadowing: Part 1," https://schuttejoe.github.io/post/ggximportancesamplingpart1/
-vec3 sampleGGX(inout RandomState state, in vec3 viewVec, in vec3 normal, in float roughness)
+vec3 sampleGGX(in float rand1, in float rand2, in vec3 viewVec, in vec3 normal, in float roughness)
 {
   float alpha = roughness * roughness;
-
-  float rand1 = randomFloat(state, 0.0, 1.0);
-  float rand2 = randomFloat(state, 0.0, 1.0);
 
   float theta = atan(alpha * sqrt(rand1 / (1.0 - rand1)));
   float phi = 2.0 * PI * rand2;
@@ -96,10 +81,8 @@ float geometricAttenuationSchlick(in vec3 lightVec, in vec3 viewVec, in vec3 nor
 // Sample a random point on unit hemisphere from p(x,y,z)=cosƒÆ
 // See: https://shikihuiku.wordpress.com/2016/06/14/%E3%83%AC%E3%83%B3%E3%83%80%E3%83%AA%E3%83%B3%E3%82%B0%E3%81%AB%E3%81%8A%E3%81%91%E3%82%8Bimportancesampling%E3%81%AE%E5%9F%BA%E7%A4%8E/ (in Japanese)
 // (Note: In the above article, it seems there is a mistake in equation of P(ƒÓ|ƒÆ) and ƒÓ. However sample code is correct)
-vec3 sampleHemisphereCosine(inout RandomState state, in vec3 viewVec, in vec3 normal)
+vec3 sampleHemisphereCosine(in float rand1, in float rand2, in vec3 viewVec, in vec3 normal)
 {
-  float rand1 = randomFloat(state, 0.0, 1.0);
-  float rand2 = randomFloat(state, 0.0, 1.0);
   // Sample in spherical coordinate
   float theta = asin(sqrt(rand1));
   float phi = 2 * PI * rand2;
@@ -180,12 +163,12 @@ void main()
   // Probability of sampling specular reflection
   float specularProb = mix(0.3, 1.0, metallic);
 
-  if (randomFloat(payload.randomState, 0.0, 1.0) < specularProb) { // Specular
+  if (payload.random[0] < specularProb) { // Specular
     // Fresnel factor F(v,h)
     vec3 f0 = mix(vec3(0.04), color, metallic);
 
     // Sample a halfway vector from GGX NDF
-    vec3 halfwayVec = sampleGGX(payload.randomState, viewVec, normal, roughness);
+    vec3 halfwayVec = sampleGGX(payload.random[1], payload.random[2], viewVec, normal, roughness);
     // Calculate light vector from halfway vector
     lightVec = reflect(-viewVec, halfwayVec);
 
@@ -204,7 +187,7 @@ void main()
 
     payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / specularProb;
   } else {  // Diffuse
-    lightVec = sampleHemisphereCosine(payload.randomState, viewVec, normal);
+    lightVec = sampleHemisphereCosine(payload.random[1], payload.random[2], viewVec, normal);
 
     // ((1 - metallic) * (color / PI) * dotNV) / (dotNV / PI) / (1 - specularProb)
     payload.color *=  (1 - metallic) * color / (1 - specularProb);

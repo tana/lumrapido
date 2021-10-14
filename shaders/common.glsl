@@ -33,7 +33,7 @@ struct RayPayload
   bool traceNextRay;
   vec3 nextOrigin;
   vec3 nextDirection;
-  RandomState randomState;
+  float random[3];  // [0,1) random numbers used in closest hit shader
 };
 
 struct RayTracingUniform

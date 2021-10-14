@@ -15,16 +15,18 @@ layout(binding = 2) uniform Uniforms {
 
 layout(location = 0) rayPayloadEXT RayPayload payload;
 
+RandomState state;
+
 void main()
 {
   // Initialize RNG using pixel coord as seed
-  initRandom(payload.randomState, (gl_LaunchIDEXT.x << 16) | gl_LaunchIDEXT.y);
+  initRandom(state, (gl_LaunchIDEXT.x << 16) | gl_LaunchIDEXT.y);
 
   vec3 meanColor = vec3(0.0);
 
   for (int i = 0; i < uniforms.samplesPerPixel; i++) {
     // Random jitter added to pixel coordinate for antialiasing
-    vec2 jitter = vec2(randomFloat(payload.randomState, 0.0, 1.0), randomFloat(payload.randomState, 0.0, 1.0));
+    vec2 jitter = vec2(randomFloat(state, 0.0, 1.0), randomFloat(state, 0.0, 1.0));
     // Pixel position in normalized device coordinate (-1 <= x,y <= 1)
     vec2 pixelNDC = 2.0 * (vec2(gl_LaunchIDEXT.xy) + jitter) / vec2(gl_LaunchSizeEXT.xy) - 1.0;
     // Ray direction in camera coordinate
@@ -38,6 +40,11 @@ void main()
     payload.color = vec3(1.0);
 
     do {
+      // Generate random numbers used in the closest hit shader
+      for (int i = 0; i < payload.random.length(); i++) {
+        payload.random[i] = randomFloat(state, 0.0, 1.0);
+      }
+
       float tMin = 0.001;
       float tMax = 10000.0;
 
