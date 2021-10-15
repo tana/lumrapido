@@ -43,6 +43,9 @@ lumrapido [OPTIONS] GLTF_FILE
 - `-u "X Y Z"`: Set upward direction of the camera.
 - `-W WIDTH`: Set window width.
 - `-H HEIGHT`: Set window height.
+- `-a ALGORITHM`: Choose sampling algorithm to use. Supported algorithms are:
+  - `pt` Vanilla path tracing (default).
+  - `qmc` Quasi-Monte Carlo algorithm using Hammersley sequence.
 - `--debug`: Enable Vulkan validation layer (for debugging).
 
 
