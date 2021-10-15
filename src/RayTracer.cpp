@@ -4,15 +4,30 @@
 #include <iostream>
 #include <vsg/all.h>
 #include "RayTracingUniform.h"
+#include "hammersley.h"
 
-RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<RayTracingScene> scene)
+RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<RayTracingScene> scene, SamplingAlgorithm algorithm)
   : device(device), screenSize({ uint32_t(width), uint32_t(height) }),
-    scene(scene)
+    scene(scene),
+    algorithm(algorithm)
 {
   uniformValue = RayTracingUniformValue::create();
 
+  // Choose ray generation shader for specified sampling algorithm
+  std::string rayGenerationShaderPath;
+  switch (algorithm) {
+  case SamplingAlgorithm::PATH_TRACING:
+    rayGenerationShaderPath = "shaders/rayGeneration.spv";
+    break;
+  case SamplingAlgorithm::QUASI_MONTE_CARLO:
+    rayGenerationShaderPath = "shaders/rayGenerationQMC.spv";
+    break;
+  default:
+    break;
+  }
+
   // Load shaders
-  rayGenerationShader = vsg::ShaderStage::read(VK_SHADER_STAGE_RAYGEN_BIT_KHR, "main", "shaders/rayGeneration.spv");
+  rayGenerationShader = vsg::ShaderStage::read(VK_SHADER_STAGE_RAYGEN_BIT_KHR, "main", rayGenerationShaderPath);
   missShader = vsg::ShaderStage::read(VK_SHADER_STAGE_MISS_BIT_KHR, "main", "shaders/miss.spv");
   closestHitShader = vsg::ShaderStage::read(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "main", "shaders/closestHit.spv");
   if (!rayGenerationShader || !missShader || !closestHitShader) {
@@ -86,6 +101,10 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
     // Binding 10 is textures
     { 10, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(MAX_NUM_TEXTURES), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, nullptr }
   };
+  // If algorithm is QMC, add binding for low-discrepancy sequence (Binding 11)
+  if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
+    descriptorBindings.push_back(VkDescriptorSetLayoutBinding{ 11, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr });
+  }
   auto descriptorLayout = vsg::DescriptorSetLayout::create(descriptorBindings);
 
   // Create descriptors
@@ -113,8 +132,18 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
     imageInfoList.begin());
   textureDescriptor = vsg::DescriptorImage::create(imageInfoList, 10, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Binding 10
 
+  // When algorithm is QMC, create a descriptor for low-discrepancy sequence
+  if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
+    hammersley = vsg::floatArray::create(); // Actual content is set later (in setSamplesPerPixel)
+    lowDiscrepancySeqDescriptor = vsg::DescriptorBuffer::create(hammersley, 11, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);  // Binding 11
+  }
+
   // Combine descriptor into a descriptor set
-  descriptorSet = vsg::DescriptorSet::create(descriptorLayout, vsg::Descriptors{ tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, textureDescriptor });
+  vsg::Descriptors descriptors = { tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, textureDescriptor };
+  if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
+    descriptors.push_back(lowDiscrepancySeqDescriptor);
+  }
+  descriptorSet = vsg::DescriptorSet::create(descriptorLayout, descriptors);
 
   // Create ray tracing pipeline
   pipelineLayout = vsg::PipelineLayout::create(vsg::DescriptorSetLayouts{ descriptorLayout }, vsg::PushConstantRanges{});
@@ -129,6 +158,13 @@ void RayTracer::setSamplesPerPixel(int samplesPerPixel)
 {
   uniformValue->value().samplesPerPixel = uint32_t(samplesPerPixel);
   uniformDescriptor->copyDataListToBuffers();
+
+  if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
+    // Generate low-discrepancy sequence for specified number of samples
+    int numElems = SAMPLING_DIMENSIONS * samplesPerPixel;
+    hammersley->assign(numElems, (float*)malloc(numElems * sizeof(float)));
+    generateScrambledHammersley(SAMPLING_DIMENSIONS, samplesPerPixel, hammersley);  // Fill data
+  }
 }
 
 void RayTracer::setCameraParams(const vsg::mat4& viewMat, const vsg::mat4& projectionMat)

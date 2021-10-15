@@ -77,6 +77,14 @@ int main(int argc, char* argv[])
   std::string envMapFile = arguments.value<std::string>("", { "--envmap", "-e" });
   int screenWidth = arguments.value<int>(DEFAULT_SCREEN_WIDTH, { "--screen-width", "-W" });
   int screenHeight = arguments.value<int>(DEFAULT_SCREEN_HEIGHT, { "--screen-height", "-H" });
+  std::string algorithmName = arguments.value<std::string>("pt", { "--algorithm", "-a" });
+
+  SamplingAlgorithm algorithm;
+  if (algorithmName == "pt") {
+    algorithm = SamplingAlgorithm::PATH_TRACING;
+  } else if (algorithmName == "qmc") {
+    algorithm = SamplingAlgorithm::QUASI_MONTE_CARLO;
+  }
 
   std::string gltfFile;
   // Flags such as "--debug" are removed by arguments.read calls above
@@ -140,7 +148,7 @@ int main(int argc, char* argv[])
     scene->envMapTextureIdx = scene->addTexture(envMap, vsg::Sampler::create());
   }
 
-  auto rayTracer = RayTracer::create(device, screenWidth, screenHeight, scene);
+  auto rayTracer = RayTracer::create(device, screenWidth, screenHeight, scene, algorithm);
 
   auto viewer = vsg::Viewer::create();
   viewer->addWindow(window);

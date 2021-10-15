@@ -1,11 +1,14 @@
 #version 460
 #extension GL_EXT_ray_tracing : enable
+#extension GL_EXT_scalar_block_layout : enable
 
 #include "common.glsl"
 
-// Ray generation shader (vanilla path tracing)
+// Ray generation shader (Quasi-Monte Carlo)
 
 const int MAX_DEPTH = 10;
+
+const int SAMPLING_DIMENSIONS = 2 + 3 * MAX_DEPTH; // 2 for antialiasing, 3 per each depth of ray tracing
 
 layout(binding = 0) uniform accelerationStructureEXT tlas;  // Acceleration structure (scene)
 layout(binding = 1, rgba32f) writeonly uniform image2D targetImage; // Image to store rendering result
@@ -13,20 +16,24 @@ layout(binding = 2) uniform Uniforms {
   RayTracingUniform uniforms;
 };
 
+layout(binding = 11, scalar) readonly buffer HammersleySequence {
+  float[] hammersley;
+};
+
 layout(location = 0) rayPayloadEXT RayPayload payload;
 
-RandomState state;
+float getHammersley(int sampleId, int dim)
+{
+  return hammersley[SAMPLING_DIMENSIONS * sampleId + dim];
+}
 
 void main()
 {
-  // Initialize RNG using pixel coord as seed
-  initRandom(state, (gl_LaunchIDEXT.x << 16) | gl_LaunchIDEXT.y);
-
   vec3 meanColor = vec3(0.0);
 
   for (int sampleId = 0; sampleId < uniforms.samplesPerPixel; sampleId++) {
     // Random jitter added to pixel coordinate for antialiasing
-    vec2 jitter = vec2(randomFloat(state, 0.0, 1.0), randomFloat(state, 0.0, 1.0));
+    vec2 jitter = vec2(getHammersley(sampleId, 0), getHammersley(sampleId, 1));
     // Pixel position in normalized device coordinate (-1 <= x,y <= 1)
     vec2 pixelNDC = 2.0 * (vec2(gl_LaunchIDEXT.xy) + jitter) / vec2(gl_LaunchSizeEXT.xy) - 1.0;
     // Ray direction in camera coordinate
@@ -39,10 +46,13 @@ void main()
     int depth = 0;
     payload.color = vec3(1.0);
 
+    int dim = 2;
+
     do {
       // Generate random numbers used in the closest hit shader
       for (int i = 0; i < payload.random.length(); i++) {
-        payload.random[i] = randomFloat(state, 0.0, 1.0);
+        payload.random[i] = getHammersley(sampleId, dim);
+        dim++;
       }
 
       float tMin = 0.001;

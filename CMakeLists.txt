@@ -14,7 +14,7 @@ add_subdirectory("./tinygltf")
 set(TINYEXR_BUILD_SAMPLE OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("./tinyexr")
 
-add_executable(lumrapido "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp" "include/RayTracingScene.h" "src/RayTracingScene.cpp" "include/GLTFLoader.h" "src/GLTFLoader.cpp" "include/gltfUtils.h" "src/gltfUtils.cpp")
+add_executable(lumrapido "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp" "include/RayTracingScene.h" "src/RayTracingScene.cpp" "include/GLTFLoader.h" "src/GLTFLoader.cpp" "include/gltfUtils.h" "src/gltfUtils.cpp" "include/hammersley.h" "src/hammersley.cpp")
 target_include_directories(lumrapido PRIVATE "include/")
 target_include_directories(lumrapido PRIVATE "tinyexr/")
 target_link_libraries(lumrapido vsg::vsg tinygltf tinyexr)
@@ -32,7 +32,8 @@ endfunction()
 add_shader("shaders/miss.rmiss" "shaders/miss.spv")
 add_shader("shaders/closestHit.rchit" "shaders/closestHit.spv")
 add_shader("shaders/rayGeneration.rgen" "shaders/rayGeneration.spv")
+add_shader("shaders/rayGenerationQMC.rgen" "shaders/rayGenerationQMC.spv")
 
 add_custom_target(
   shaders ALL
-  DEPENDS "shaders/miss.spv" "shaders/closestHit.spv" "shaders/rayGeneration.spv")
+  DEPENDS "shaders/miss.spv" "shaders/closestHit.spv" "shaders/rayGeneration.spv" "shaders/rayGenerationQMC.spv")

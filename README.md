@@ -52,3 +52,5 @@ Lumrapido is based on VulkanSceneGraph's [`vsgraytracing` example](https://githu
 Also, algorithm of ray tracing and default scene are based on ["Ray Tracing in One Weekend"](https://raytracing.github.io/books/RayTracingInOneWeekend.html) (v3.2.3) written by Peter Shirley.
 
 Vulkan-specific designs are based on [NVIDIA Vulkan Ray Tracing tutorial](https://nvpro-samples.github.io/vk_raytracing_tutorial_KHR/).
+
+Algorithm of Quasi-Monte Carlo sampling is based on the book ["Physically Based Rendering: From Theory To Implementation"](https://www.pbr-book.org/3ed-2018/contents) written by Matt Pharr, Wenzel Jakob, and Greg Humphreys.

@@ -14,10 +14,15 @@
 #include "RayTracingUniform.h"
 #include "RayTracingScene.h"
 
+enum class SamplingAlgorithm
+{
+  PATH_TRACING, QUASI_MONTE_CARLO
+};
+
 class RayTracer : public vsg::Inherit<vsg::Object, RayTracer>
 {
 public:
-  RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<RayTracingScene> scene);
+  RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<RayTracingScene> scene, SamplingAlgorithm algorithm = SamplingAlgorithm::PATH_TRACING);
 
   // Update setting of samples per pixel in uniform buffer
   void setSamplesPerPixel(int samplesPerPixel);
@@ -30,10 +35,15 @@ public:
 
   const size_t MAX_NUM_TEXTURES = 32;
 
+  const int MAX_DEPTH = 10;
+  const int SAMPLING_DIMENSIONS = 2 + 3 * MAX_DEPTH;  // 2 for antialiasing, 3 per each depth of ray tracing
+
 protected:
   vsg::Device* device;
   
   VkExtent2D screenSize;
+
+  SamplingAlgorithm algorithm;
 
   vsg::ref_ptr<RayTracingUniformValue> uniformValue;  // Parameters for ray tracing
 
@@ -43,9 +53,11 @@ protected:
   vsg::ref_ptr<vsg::Image> targetImage; // Image to render result of ray tracing
   vsg::ref_ptr<vsg::ImageView> targetImageView;
 
+  vsg::ref_ptr<vsg::floatArray> hammersley; // Hammersley sequence for QMC
+
   vsg::ref_ptr<vsg::DescriptorAccelerationStructure> tlasDescriptor;
   vsg::ref_ptr<vsg::DescriptorImage> targetImageDescriptor;
-  vsg::ref_ptr<vsg::DescriptorBuffer> uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor;
+  vsg::ref_ptr<vsg::DescriptorBuffer> uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, lowDiscrepancySeqDescriptor;
   vsg::ref_ptr<vsg::DescriptorImage> textureDescriptor;
   vsg::ref_ptr<vsg::DescriptorSet> descriptorSet;
   vsg::ref_ptr<vsg::PipelineLayout> pipelineLayout;

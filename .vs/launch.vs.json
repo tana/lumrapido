@@ -9,6 +9,8 @@
       "name": "lumrapido.exe",
       "args": [
         "--debug",
+        "-a",
+        "qmc",
         "-e",
         "../../../test_scenes/white_env.exr",
         "../../../test_scenes/cornell_box.glb"
