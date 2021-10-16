@@ -123,16 +123,17 @@ void main()
   vec3 normalObj = interpolate(normal0, normal1, normal2, uv);
   // Normal vector in world coordinate
   vec3 normal = normalize(gl_ObjectToWorldEXT * vec4(normalObj, 0.0));
-  // Reverse normal vector if the surface is facing back
-  if (!isFront) {
-    normal = -normal;
-  }
 
   // Interpolate texture coord
   vec2 texCoord = interpolate(texCoord0, texCoord1, texCoord2, uv);
 
   // Interpolate tangent (assuming all tangent vectors of a triangle have same w component)
-  vec4 tangent = interpolate(tangent0, tangent1, tangent2, uv);
+  vec3 tangent = interpolate(tangent0.xyz, tangent1.xyz, tangent2.xyz, uv);
+
+  // Calculate bitangent
+  // It assumes w of all tangents in one triangle are the same.
+  // (See 3.7.2.1 in glTF 2.0 Specification https://www.pbr-book.org/3ed-2018/contents)
+  vec3 bitangent = cross(normal, tangent) * tangent0.w;
 
   // Calculate base color
   vec3 color = material.color;
@@ -147,6 +148,24 @@ void main()
     vec4 metallicRoughness = texture(textures[material.metallicRoughnessTextureIdx], texCoord);
     metallic *= metallicRoughness.b;
     roughness *= metallicRoughness.g;
+  }
+
+  // Normal map
+  if (material.normalTextureIdx >= 0) { // If the object has a normal texture
+    vec3 tangentSpaceNormal = normalize(mix(
+      vec3(-material.normalTextureScale, -material.normalTextureScale, -1.0),
+      vec3(material.normalTextureScale, material.normalTextureScale, 1.0),
+      texture(textures[material.normalTextureIdx], texCoord).xyz));
+    // Transform it from tangent space to world space
+    // Coordinate convention (tangent is x-axis, bitangent is y-axis, normal is z-axis) is same as MikkTSpace (referenced in glTF specification)
+    // See: MikkTSpace http://www.mikktspace.com/
+    // See: 3.7.2.1 in glTF specification https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#meshes-overview
+    normal = tangent * tangentSpaceNormal.x + bitangent * tangentSpaceNormal.y + normal * tangentSpaceNormal.z;
+  }
+
+  // Reverse normal vector if the surface is facing back
+  if (!isFront) {
+    normal = -normal;
   }
 
   // Point of intersection
