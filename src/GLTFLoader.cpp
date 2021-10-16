@@ -179,6 +179,22 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
     material.metallicRoughnessTextureIdx = -1;
   }
 
+  if (gltfMaterial.normalTexture.index >= 0) {  // Has a normal texture
+    if (gltfMaterial.normalTexture.texCoord != 0) {
+      return std::nullopt;  // Only TEXCOORD_0 is supported
+    }
+
+    auto textureIdx = loadTexture(model.textures[gltfMaterial.normalTexture.index], model);
+    if (!textureIdx) {
+      return std::nullopt;
+    }
+    material.normalTextureIdx = textureIdx.value();
+
+    material.normalTextureScale = float(gltfMaterial.normalTexture.scale);
+  } else {
+    material.normalTextureIdx = -1;
+  }
+
   return material;
 }
 

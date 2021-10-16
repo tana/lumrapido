@@ -12,6 +12,8 @@ struct Material
   float roughness;
   int colorTextureIdx;
   int metallicRoughnessTextureIdx;
+  int normalTextureIdx;
+  float normalTextureScale;
 };
 
 struct ObjectInfo

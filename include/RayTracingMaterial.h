@@ -9,4 +9,6 @@ struct RayTracingMaterial
   float roughness = 0.0f;
   int32_t colorTextureIdx = -1;
   int32_t metallicRoughnessTextureIdx = -1;
+  int32_t normalTextureIdx = -1;
+  float normalTextureScale = 1.0f;
 };
