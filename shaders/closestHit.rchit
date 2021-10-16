@@ -150,6 +150,17 @@ void main()
     roughness *= metallicRoughness.g;
   }
 
+  // Calculate emission
+  vec3 emission = material.emissive;
+  if (material.emissiveTextureIdx >= 0) { // If the object has an emissive texture
+    // Value of emissive texture has to be decoded from sRGB to linear color.
+    // See: 3.9.3 in glTF 2.0 Specification https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#additional-textures
+    // TODO: More physically accurate handling of emission
+    emission *= pow(texture(textures[material.emissiveTextureIdx], texCoord).xyz, vec3(2.2)); // Approximate gamma 2.2. See https://en.wikipedia.org/w/index.php?title=SRGB&oldid=1050120874
+  }
+  // Accumulate emitted light
+  payload.color += payload.multiplier * emission;
+
   // Normal map
   if (material.normalTextureIdx >= 0) { // If the object has a normal texture
     vec3 tangentSpaceNormal = normalize(mix(
@@ -195,7 +206,7 @@ void main()
     float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, roughness);
 
     if (dot(lightVec, normal) <= 0.0 || dot(lightVec, halfwayVec) <= 0.0) { // Not reflecting
-      payload.color = vec3(0.0);
+      payload.multiplier = vec3(0.0);
       payload.traceNextRay = false;
       return;
     }
@@ -204,12 +215,12 @@ void main()
     float dotVH = dot(viewVec, halfwayVec);
     float dotNH = dot(normal, halfwayVec);
 
-    payload.color *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / specularProb;
+    payload.multiplier *= fresnel * geometricAttenuation * dotVH / (dotNV * dotNH) / specularProb;
   } else {  // Diffuse
     lightVec = sampleHemisphereCosine(payload.random[1], payload.random[2], viewVec, normal);
 
     // ((1 - metallic) * (color / PI) * dotNV) / (dotNV / PI) / (1 - specularProb)
-    payload.color *=  (1 - metallic) * color / (1 - specularProb);
+    payload.multiplier *=  (1 - metallic) * color / (1 - specularProb);
   }
 
   // Trace next ray

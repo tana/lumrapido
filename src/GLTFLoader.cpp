@@ -150,6 +150,9 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
   material.color.b = float(pbr.baseColorFactor[2]);
   material.metallic = float(pbr.metallicFactor);
   material.roughness = float(pbr.roughnessFactor);
+  material.emissive.r = float(gltfMaterial.emissiveFactor[0]);
+  material.emissive.g = float(gltfMaterial.emissiveFactor[1]);
+  material.emissive.b = float(gltfMaterial.emissiveFactor[2]);
 
   if (pbr.baseColorTexture.index >= 0) {  // Has a base color texture
     if (pbr.baseColorTexture.texCoord != 0) {
@@ -193,6 +196,20 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
     material.normalTextureScale = float(gltfMaterial.normalTexture.scale);
   } else {
     material.normalTextureIdx = -1;
+  }
+
+  if (gltfMaterial.emissiveTexture.index >= 0) {  // Has an emissive texture
+    if (gltfMaterial.emissiveTexture.texCoord != 0) {
+      return std::nullopt;  // Only TEXCOORD_0 is supported
+    }
+
+    auto textureIdx = loadTexture(model.textures[gltfMaterial.emissiveTexture.index], model);
+    if (!textureIdx) {
+      return std::nullopt;
+    }
+    material.emissiveTextureIdx = textureIdx.value();
+  } else {
+    material.emissiveTextureIdx = -1;
   }
 
   return material;

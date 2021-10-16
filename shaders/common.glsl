@@ -14,6 +14,8 @@ struct Material
   int metallicRoughnessTextureIdx;
   int normalTextureIdx;
   float normalTextureScale;
+  int emissiveTextureIdx;
+  vec3 emissive;
 };
 
 struct ObjectInfo
@@ -31,7 +33,8 @@ struct RandomState
 
 struct RayPayload
 {
-  vec3 color;
+  vec3 multiplier;  // This will be multiplied to light value (background or emissive)
+  vec3 color; // Radiance will be accumulated to this variable
   bool traceNextRay;
   vec3 nextOrigin;
   vec3 nextDirection;

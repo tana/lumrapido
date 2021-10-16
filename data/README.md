@@ -11,6 +11,11 @@ Licensed under SCEA Shared Source License 1.0 (See LICENSE_Duck file).
 
 License is public domain (CC0).
 
+## BoomBox.glb
+[BoomBox.glb is one of glTF Sample Models](https://github.com/KhronosGroup/glTF-Sample-Models/tree/master/2.0/BoomBox).
+
+License is public domain (CC0).
+
 ## studio_garden_2k.exr
 [Studio Garden by Sergej Majboroda](https://polyhaven.com/a/studio_garden)
 
