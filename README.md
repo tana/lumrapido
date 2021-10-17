@@ -41,6 +41,7 @@ lumrapido [OPTIONS] GLTF_FILE
 - `-c "X Y Z"`: Set initial camera position.
 - `-l "X Y Z"`: Set initial target position of the camera.
 - `-u "X Y Z"`: Set upward direction of the camera.
+- `-f FOV`: Set horizontal field of view of the camera in degrees (default is 90 deg).
 - `-W WIDTH`: Set window width.
 - `-H HEIGHT`: Set window height.
 - `-a ALGORITHM`: Choose sampling algorithm to use. Supported algorithms are:

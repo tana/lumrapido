@@ -73,6 +73,7 @@ int main(int argc, char* argv[])
   auto cameraPos = arguments.value(vsg::dvec3(0.0, 0.0, 1.0), { "--camera", "-c" });
   auto lookAtPos = arguments.value(vsg::dvec3(0.0, 0.0, 0.0), { "--lookat", "-l" });
   auto cameraUpVec = arguments.value(vsg::dvec3(0.0, 1.0, 0.0), { "--camera-up", "-u" });
+  double fov = arguments.value(90.0, { "--camera-fov", "-f" });
   uint32_t samplesPerPixel = arguments.value(DEFAULT_SAMPLES_PER_PIXEL, { "--samples", "-s" });
   std::string envMapFile = arguments.value<std::string>("", { "--envmap", "-e" });
   int screenWidth = arguments.value<int>(DEFAULT_SCREEN_WIDTH, { "--screen-width", "-W" });
@@ -153,7 +154,7 @@ int main(int argc, char* argv[])
   auto viewer = vsg::Viewer::create();
   viewer->addWindow(window);
 
-  auto perspective = vsg::Perspective::create(90.0, double(screenWidth) / double(screenHeight), 0.1, 1000.0);
+  auto perspective = vsg::Perspective::create(fov, double(screenWidth) / double(screenHeight), 0.1, 1000.0);
   auto lookAt = vsg::LookAt::create(cameraPos, lookAtPos, cameraUpVec);
   auto camera = vsg::Camera::create(perspective, lookAt, vsg::ViewportState::create(window->extent2D()));
 
