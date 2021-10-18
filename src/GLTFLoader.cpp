@@ -148,11 +148,23 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
   material.color.r = float(pbr.baseColorFactor[0]);
   material.color.g = float(pbr.baseColorFactor[1]);
   material.color.b = float(pbr.baseColorFactor[2]);
+
   material.metallic = float(pbr.metallicFactor);
   material.roughness = float(pbr.roughnessFactor);
+
   material.emissive.r = float(gltfMaterial.emissiveFactor[0]);
   material.emissive.g = float(gltfMaterial.emissiveFactor[1]);
   material.emissive.b = float(gltfMaterial.emissiveFactor[2]);
+
+  material.alphaFactor = float(pbr.baseColorFactor[3]);
+  material.alphaCutoff = float(gltfMaterial.alphaCutoff);
+  if (gltfMaterial.alphaMode == "OPAQUE") {
+    material.alphaMode = AlphaMode::Opaque;
+  } else if (gltfMaterial.alphaMode == "MASK") {
+    material.alphaMode = AlphaMode::Mask;
+  } else {
+    material.alphaMode = AlphaMode::Opaque; // BLEND is not supported
+  }
 
   if (pbr.baseColorTexture.index >= 0) {  // Has a base color texture
     if (pbr.baseColorTexture.texCoord != 0) {

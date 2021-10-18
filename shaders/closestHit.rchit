@@ -118,6 +118,9 @@ void main()
   Material material = objectInfos[gl_InstanceID].material;
 
   bool isFront = gl_HitKindEXT == gl_HitKindFrontFacingTriangleEXT;
+
+  // Point of intersection
+  vec3 hitPoint = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
   
   // Normal vector in object coordinate (interpolated from barycentric coords)
   vec3 normalObj = interpolate(normal0, normal1, normal2, uv);
@@ -137,8 +140,20 @@ void main()
 
   // Calculate base color
   vec3 color = material.color;
+  float alpha = material.alphaFactor;
   if (material.colorTextureIdx >= 0) {  // If the object has a color texture
-    color *= texture(textures[material.colorTextureIdx], texCoord).xyz;
+    vec4 textureValue = texture(textures[material.colorTextureIdx], texCoord);
+    color *= textureValue.rgb;
+    alpha *= textureValue.a;
+  }
+
+  // Handle alpha mask
+  if (material.alphaMode == ALPHA_MODE_MASK && alpha < material.alphaCutoff) {
+    // Proceed tracing as if this object does not exist
+    payload.nextOrigin = hitPoint;
+    payload.nextDirection = gl_WorldRayDirectionEXT;
+    payload.traceNextRay = true;
+    return;
   }
 
   // Calculate metallic and roughness
@@ -179,8 +194,6 @@ void main()
     normal = -normal;
   }
 
-  // Point of intersection
-  vec3 hitPoint = gl_WorldRayOriginEXT + gl_HitTEXT * gl_WorldRayDirectionEXT;
   // Normalized direction of incoming ray
   vec3 unitRayDir = normalize(gl_WorldRayDirectionEXT);
 

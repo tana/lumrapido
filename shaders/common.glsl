@@ -5,6 +5,9 @@ const float PI = 3.14159265359;
 
 const int MAX_NUM_TEXTURES = 32;
 
+const int ALPHA_MODE_OPAQUE = 0;
+const int ALPHA_MODE_MASK = 1;
+
 struct Material
 {
   vec3 color;
@@ -16,6 +19,9 @@ struct Material
   float normalTextureScale;
   int emissiveTextureIdx;
   vec3 emissive;
+  int alphaMode;
+  float alphaFactor;
+  float alphaCutoff;
 };
 
 struct ObjectInfo
