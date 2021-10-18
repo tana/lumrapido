@@ -171,7 +171,7 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
       return std::nullopt;  // Only TEXCOORD_0 is supported
     }
 
-    auto textureIdx = loadTexture(model.textures[pbr.baseColorTexture.index], model);
+    auto textureIdx = loadTextureCached(pbr.baseColorTexture.index, model);
     if (!textureIdx) {
       return std::nullopt;
     }
@@ -185,7 +185,7 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
       return std::nullopt;  // Only TEXCOORD_0 is supported
     }
 
-    auto textureIdx = loadTexture(model.textures[pbr.metallicRoughnessTexture.index], model);
+    auto textureIdx = loadTextureCached(pbr.metallicRoughnessTexture.index, model);
     if (!textureIdx) {
       return std::nullopt;
     }
@@ -199,7 +199,7 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
       return std::nullopt;  // Only TEXCOORD_0 is supported
     }
 
-    auto textureIdx = loadTexture(model.textures[gltfMaterial.normalTexture.index], model);
+    auto textureIdx = loadTextureCached(gltfMaterial.normalTexture.index, model);
     if (!textureIdx) {
       return std::nullopt;
     }
@@ -215,7 +215,7 @@ std::optional<RayTracingMaterial> GLTFLoader::loadMaterial(const tinygltf::Mater
       return std::nullopt;  // Only TEXCOORD_0 is supported
     }
 
-    auto textureIdx = loadTexture(model.textures[gltfMaterial.emissiveTexture.index], model);
+    auto textureIdx = loadTextureCached(gltfMaterial.emissiveTexture.index, model);
     if (!textureIdx) {
       return std::nullopt;
     }
@@ -237,6 +237,22 @@ std::optional<uint32_t> GLTFLoader::loadTexture(const tinygltf::Texture& gltfTex
   // TODO: sampler setting
 
   return scene->addTexture(imageData, sampler);
+}
+
+std::optional<uint32_t> GLTFLoader::loadTextureCached(int textureIdx, const tinygltf::Model& model)
+{
+  if (textureCache.find(textureIdx) != textureCache.end()) {  // Texture for this textureIdx was already created
+    return textureCache[textureIdx];
+  }
+
+  std::optional<uint32_t> idx = loadTexture(model.textures[textureIdx], model);
+  if (!idx) {
+    return std::nullopt;
+  }
+
+  textureCache[textureIdx] = idx.value(); // Cache
+
+  return idx;
 }
 
 vsg::ref_ptr<vsg::Data> GLTFLoader::readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType)

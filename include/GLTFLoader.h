@@ -2,6 +2,7 @@
 
 #include <string>
 #include <optional>
+#include <unordered_map>
 #include <vsg/maths/mat4.h>
 #include "tiny_gltf.h"
 #include "RayTracingScene.h"
@@ -22,9 +23,12 @@ protected:
 
   std::optional<RayTracingMaterial> loadMaterial(const tinygltf::Material& gltfMaterial, const tinygltf::Model& model);
   std::optional<uint32_t> loadTexture(const tinygltf::Texture& gltfTexture, const tinygltf::Model& model);
+  std::optional<uint32_t> loadTextureCached(int textureIdx, const tinygltf::Model& model);
 
   // Read image data and convert into a RGB float array, regardless of original format
   vsg::ref_ptr<vsg::Data> readImageData(const std::vector<unsigned char>& data, int width, int height, int numComp, int compType);
 
   vsg::ref_ptr<RayTracingScene> scene;
+
+  std::unordered_map<int, uint32_t> textureCache;
 };
