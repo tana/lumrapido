@@ -52,7 +52,6 @@ struct RayTracingUniform
   mat4 invViewMat; // Inverse of view matrix (i.e. transform camera coordinate to world coordinate)
   mat4 invProjectionMat; // Inverse of projection matrix (i.e. transform normalized device coordinate into camera coordinate)
   uint samplesPerPixel; // How many rays are sampled to render one pixel
-  int envMapTextureIdx; // Index of environment map texture (negative when there is no environment map)
 };
 
 // Pseudo-random number using Xorshift (xor128)
