@@ -58,7 +58,7 @@ protected:
   vsg::ref_ptr<vsg::DescriptorAccelerationStructure> tlasDescriptor;
   vsg::ref_ptr<vsg::DescriptorImage> targetImageDescriptor;
   vsg::ref_ptr<vsg::DescriptorBuffer> uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, lowDiscrepancySeqDescriptor;
-  vsg::ref_ptr<vsg::DescriptorImage> textureDescriptor;
+  vsg::ref_ptr<vsg::DescriptorImage> textureDescriptor, envMapDescriptor;
   vsg::ref_ptr<vsg::DescriptorSet> descriptorSet;
   vsg::ref_ptr<vsg::PipelineLayout> pipelineLayout;
   vsg::ref_ptr<vsg::RayTracingPipeline> rayTracingPipeline;
