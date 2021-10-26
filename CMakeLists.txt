@@ -21,18 +21,20 @@ target_link_libraries(lumrapido vsg::vsg tinygltf tinyexr)
 
 set(GLSLC_FLAGS "--target-env=vulkan1.1" "--target-spv=spv1.4")
 
-function(add_shader SOURCE_FILE SPIRV_FILE)
+set(SPIRV_HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/shaders/common.glsl")
+
+function(add_shader SPIRV_FILE SOURCE_FILE ADDITIONAL_FLAGS)
   add_custom_command(
     OUTPUT ${SPIRV_FILE}
-    COMMAND Vulkan::glslc ${GLSLC_FLAGS} -o ${SPIRV_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE}
-    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE}
+    COMMAND Vulkan::glslc ${GLSLC_FLAGS} ${ADDITIONAL_FLAGS} -o ${SPIRV_FILE} ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE}
+    DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${SOURCE_FILE} ${SPIRV_HEADERS}
     VERBATIM)
 endfunction()
 
-add_shader("shaders/miss.rmiss" "shaders/miss.spv")
-add_shader("shaders/closestHit.rchit" "shaders/closestHit.spv")
-add_shader("shaders/rayGeneration.rgen" "shaders/rayGeneration.spv")
-add_shader("shaders/rayGenerationQMC.rgen" "shaders/rayGenerationQMC.spv")
+add_shader("shaders/miss.spv" "shaders/miss.rmiss" "")
+add_shader("shaders/closestHit.spv" "shaders/closestHit.rchit" "")
+add_shader("shaders/rayGeneration.spv" "shaders/rayGeneration.rgen" "-DALGORITHM_PATH_TRACING")
+add_shader("shaders/rayGenerationQMC.spv" "shaders/rayGeneration.rgen" "-DALGORITHM_QUASI_MONTE_CARLO")
 
 add_custom_target(
   shaders ALL

@@ -33,7 +33,7 @@ public:
 
   vsg::ref_ptr<RayTracingScene> scene;
 
-  const size_t MAX_NUM_TEXTURES = 127;  // FIXME: Larger value (>=128) breaks QMC (entire screen becomes blue). Probably GPU memory corruption
+  const size_t MAX_NUM_TEXTURES = 32;  // FIXME: Larger value (limit is unclear) breaks QMC (entire screen becomes blue). Probably GPU memory corruption
 
   const int MAX_DEPTH = 10;
   const int SAMPLING_DIMENSIONS = 2 + 3 * MAX_DEPTH;  // 2 for antialiasing, 3 per each depth of ray tracing
