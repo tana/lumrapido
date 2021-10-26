@@ -1,4 +1,21 @@
-// Constants, struct definitions, and utility functions for shaders
+// Macros, constants, struct definitions, and utility functions for shaders
+
+// Binding indices
+
+#define BINDING_TLAS  0
+#define BINDING_TARGET_IMAGE 1
+#define BINDING_UNIFORMS 2
+#define BINDING_OBJECT_INFOS 3
+#define BINDING_INDICES 4
+#define BINDING_VERTICES 5
+#define BINDING_NORMALS 6
+#define BINDING_TEX_COORDS 7
+#define BINDING_TANGENTS 8
+#define BINDING_TEXTURES 10
+#define BINDING_HAMMERSLEY 11
+#define BINDING_ENV_MAP 12
+
+// Constants
 
 const float EPSILON = 0.0001;
 const float PI = 3.14159265359;
@@ -7,6 +24,9 @@ const int MAX_NUM_TEXTURES = 32;
 
 const int ALPHA_MODE_OPAQUE = 0;
 const int ALPHA_MODE_MASK = 1;
+
+
+// Structs
 
 struct Material
 {
@@ -53,6 +73,9 @@ struct RayTracingUniform
   mat4 invProjectionMat; // Inverse of projection matrix (i.e. transform normalized device coordinate into camera coordinate)
   uint samplesPerPixel; // How many rays are sampled to render one pixel
 };
+
+
+// Utility functions
 
 // Pseudo-random number using Xorshift (xor128)
 // G. Marsaglia, "Xorshift RNGs", Journal of Statistical Software, vol. 8, no. 14, pp. 1-6, 2003, doi: 10.18637/jss.v008.i14

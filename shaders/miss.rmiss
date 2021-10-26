@@ -8,7 +8,7 @@
 
 layout(location = 0) rayPayloadInEXT RayPayload payload;
 
-layout(binding = 12) uniform sampler2D envMap;
+layout(binding = BINDING_ENV_MAP) uniform sampler2D envMap;
 
 void main()
 {

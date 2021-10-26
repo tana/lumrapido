@@ -14,7 +14,7 @@ add_subdirectory("./tinygltf")
 set(TINYEXR_BUILD_SAMPLE OFF CACHE INTERNAL "" FORCE)
 add_subdirectory("./tinyexr")
 
-add_executable(lumrapido "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp" "include/RayTracingScene.h" "src/RayTracingScene.cpp" "include/GLTFLoader.h" "src/GLTFLoader.cpp" "include/gltfUtils.h" "src/gltfUtils.cpp" "include/hammersley.h" "src/hammersley.cpp")
+add_executable(lumrapido "src/main.cpp" "src/utils.cpp" "include/utils.h" "include/RayTracingUniform.h" "include/SceneConversionTraversal.h" "src/SceneConversionTraversal.cpp" "include/RayTracingMaterialGroup.h" "src/RayTracingMaterialGroup.cpp" "include/RayTracingVisitor.h" "include/RayTracingMaterial.h" "include/RayTracer.h" "src/RayTracer.cpp" "include/RayTracingScene.h" "src/RayTracingScene.cpp" "include/GLTFLoader.h" "src/GLTFLoader.cpp" "include/gltfUtils.h" "src/gltfUtils.cpp" "include/hammersley.h" "src/hammersley.cpp" )
 target_include_directories(lumrapido PRIVATE "include/")
 target_include_directories(lumrapido PRIVATE "tinyexr/")
 target_link_libraries(lumrapido vsg::vsg tinygltf tinyexr)

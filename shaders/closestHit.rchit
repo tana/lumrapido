@@ -15,26 +15,26 @@
 //  R. Guy and M. Agopian, "Physically Based Rendering in Filament", https://google.github.io/filament/Filament.md.html
 //  shocker, "Disney Principled BRDF - Computer Graphics - memoRANDOM", https://rayspace.xyz/CG/contents/Disney_principled_BRDF/
 
-layout(binding = 3, scalar) readonly buffer ObjectInfos {
+layout(binding = BINDING_OBJECT_INFOS, scalar) readonly buffer ObjectInfos {
   ObjectInfo objectInfos[];
 };
-layout(binding = 4, scalar) readonly buffer Indices {
+layout(binding = BINDING_INDICES, scalar) readonly buffer Indices {
   uint16_t indices[];
 };
-layout(binding = 5, scalar) readonly buffer Vertices {
+layout(binding = BINDING_VERTICES, scalar) readonly buffer Vertices {
   vec3 vertices[];
 };
-layout(binding = 6, scalar) readonly buffer Normals {
+layout(binding = BINDING_NORMALS, scalar) readonly buffer Normals {
   vec3 normals[];
 };
-layout(binding = 7, scalar) readonly buffer TexCoords {
+layout(binding = BINDING_TEX_COORDS, scalar) readonly buffer TexCoords {
   vec2 texCoords[];
 };
-layout(binding = 8, scalar) readonly buffer Tangents {
+layout(binding = BINDING_TANGENTS, scalar) readonly buffer Tangents {
   vec4 tangents[];
 };
 
-layout(binding = 10) uniform sampler2D textures[MAX_NUM_TEXTURES];
+layout(binding = BINDING_TEXTURES) uniform sampler2D textures[MAX_NUM_TEXTURES];
 
 layout(location = 0) rayPayloadInEXT RayPayload payload;
 

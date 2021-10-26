@@ -80,45 +80,45 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
 
   // Descriptor layout which specifies types of descriptors passed to shaders
   vsg::DescriptorSetLayoutBindings descriptorBindings{
-    // Binding 0 is an acceleration structure which contains the scene
-    { 0, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
-    // Binding 1 is the target image
-    { 1, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
-    // Binding 2 is the uniform buffer
-    { 2, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
-    // Binding 3 is array of ObjectInfo, which contains offsets of indices and vertex attributes
-    { 3, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
-    // Binding 4 is array of indices of all objects combined
-    { 4, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
-    // Binding 5 is array of vertices of all objects combined
-    { 5, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
-    // Binding 6 is array of normals of all objects combined
-    { 6, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
-    // Binding 7 is array of texture coords of all objects combined
-    { 7, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
-    // Binding 8 is array of tangents of all objects combined
-    { 8, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
-    // Binding 10 is textures
-    { 10, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(MAX_NUM_TEXTURES), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
-    // Binding 12 is environment map
-    { 12, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_MISS_BIT_KHR, nullptr }
+    // Acceleration structure which contains the scene
+    { static_cast<uint32_t>(Bindings::TLAS), VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
+    // The target image
+    { static_cast<uint32_t>(Bindings::TARGET_IMAGE), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
+    // The uniform buffer
+    { static_cast<uint32_t>(Bindings::UNIFORMS), VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr },
+    // Array of ObjectInfo, which contains offsets of indices and vertex attributes
+    { static_cast<uint32_t>(Bindings::OBJECT_INFOS), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Array of indices of all objects combined
+    { static_cast<uint32_t>(Bindings::INDICES), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Array of vertices of all objects combined
+    { static_cast<uint32_t>(Bindings::VERTICES), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Array of normals of all objects combined
+    { static_cast<uint32_t>(Bindings::NORMALS), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Array of texture coords of all objects combined
+    { static_cast<uint32_t>(Bindings::TEX_COORDS), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Array of tangents of all objects combined
+    { static_cast<uint32_t>(Bindings::TANGENTS), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Textures
+    { static_cast<uint32_t>(Bindings::TEXTURES), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(MAX_NUM_TEXTURES), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // Environment map
+    { static_cast<uint32_t>(Bindings::ENV_MAP), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_MISS_BIT_KHR, nullptr }
   };
-  // If algorithm is QMC, add binding for low-discrepancy sequence (Binding 11)
+  // If algorithm is QMC, add binding for hammersley sequence
   if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
-    descriptorBindings.push_back(VkDescriptorSetLayoutBinding{ 11, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr });
+    descriptorBindings.push_back(VkDescriptorSetLayoutBinding{ static_cast<uint32_t>(Bindings::HAMMERSLEY), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1, VK_SHADER_STAGE_RAYGEN_BIT_KHR, nullptr });
   }
   auto descriptorLayout = vsg::DescriptorSetLayout::create(descriptorBindings);
 
   // Create descriptors
-  tlasDescriptor = vsg::DescriptorAccelerationStructure::create(vsg::AccelerationStructures{ tlas }, 0, 0); // Binding 0, first element of the array
-  targetImageDescriptor = vsg::DescriptorImage::create(targetImageInfo, 1, 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE); // Binding 1
-  uniformDescriptor = vsg::DescriptorBuffer::create(uniformValue, 2, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);  // Binding 2
-  objectInfoDescriptor = vsg::DescriptorBuffer::create(objectInfo, 3, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 3
-  indicesDescriptor = vsg::DescriptorBuffer::create(indices, 4, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 4
-  verticesDescriptor = vsg::DescriptorBuffer::create(vertices, 5, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 5
-  normalsDescriptor = vsg::DescriptorBuffer::create(normals, 6, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 6
-  texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoords, 7, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 7
-  tangentsDescriptor = vsg::DescriptorBuffer::create(tangents, 8, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER); // Binding 8
+  tlasDescriptor = vsg::DescriptorAccelerationStructure::create(vsg::AccelerationStructures{ tlas }, static_cast<uint32_t>(Bindings::TLAS), 0);
+  targetImageDescriptor = vsg::DescriptorImage::create(targetImageInfo, static_cast<uint32_t>(Bindings::TARGET_IMAGE), 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+  uniformDescriptor = vsg::DescriptorBuffer::create(uniformValue, static_cast<uint32_t>(Bindings::UNIFORMS), 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+  objectInfoDescriptor = vsg::DescriptorBuffer::create(objectInfo, static_cast<uint32_t>(Bindings::OBJECT_INFOS), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  indicesDescriptor = vsg::DescriptorBuffer::create(indices, static_cast<uint32_t>(Bindings::INDICES), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  verticesDescriptor = vsg::DescriptorBuffer::create(vertices, static_cast<uint32_t>(Bindings::VERTICES) , 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  normalsDescriptor = vsg::DescriptorBuffer::create(normals, static_cast<uint32_t>(Bindings::NORMALS), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  texCoordsDescriptor = vsg::DescriptorBuffer::create(texCoords, static_cast<uint32_t>(Bindings::TEX_COORDS), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+  tangentsDescriptor = vsg::DescriptorBuffer::create(tangents, static_cast<uint32_t>(Bindings::TANGENTS), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
   // Prepare descriptor for texture
   auto emptyImageData = vsg::vec3Array2D::create(1, 1, vsg::Data::Layout{ VK_FORMAT_R32G32B32_SFLOAT });
@@ -132,24 +132,24 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
     scene->textures.cbegin(),
     scene->textures.cbegin() + std::min(MAX_NUM_TEXTURES, scene->textures.size()),
     imageInfoList.begin());
-  textureDescriptor = vsg::DescriptorImage::create(imageInfoList, 10, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Binding 10
+  textureDescriptor = vsg::DescriptorImage::create(imageInfoList, static_cast<uint32_t>(Bindings::TEXTURES), 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
   // When algorithm is QMC, create a descriptor for low-discrepancy sequence
   if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
     hammersley = vsg::floatArray::create(); // Actual content is set later (in setSamplesPerPixel)
-    lowDiscrepancySeqDescriptor = vsg::DescriptorBuffer::create(hammersley, 11, 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);  // Binding 11
+    hammersleyDescriptor = vsg::DescriptorBuffer::create(hammersley, static_cast<uint32_t>(Bindings::HAMMERSLEY), 0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);  // Binding 11
   }
 
   // Create descriptor for environment map
   envMapDescriptor = vsg::DescriptorImage::create(
     vsg::Sampler::create(),
     scene->envMap,
-    12, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER); // Binding 12
+    static_cast<uint32_t>(Bindings::ENV_MAP), 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
   // Combine descriptor into a descriptor set
   vsg::Descriptors descriptors = { tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, textureDescriptor, envMapDescriptor };
   if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
-    descriptors.push_back(lowDiscrepancySeqDescriptor);
+    descriptors.push_back(hammersleyDescriptor);
   }
   descriptorSet = vsg::DescriptorSet::create(descriptorLayout, descriptors);
 

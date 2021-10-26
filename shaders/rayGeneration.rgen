@@ -10,14 +10,14 @@ const int MAX_DEPTH = 10;
 
 const int SAMPLING_DIMENSIONS = 2 + 3 * MAX_DEPTH; // 2 for antialiasing, 3 per each depth of ray tracing
 
-layout(binding = 0) uniform accelerationStructureEXT tlas;  // Acceleration structure (scene)
-layout(binding = 1, rgba32f) writeonly uniform image2D targetImage; // Image to store rendering result
-layout(binding = 2) uniform Uniforms {
+layout(binding = BINDING_TLAS) uniform accelerationStructureEXT tlas;  // Acceleration structure (scene)
+layout(binding = BINDING_TARGET_IMAGE, rgba32f) writeonly uniform image2D targetImage; // Image to store rendering result
+layout(binding = BINDING_UNIFORMS) uniform Uniforms {
   RayTracingUniform uniforms;
 };
 
 #ifdef ALGORITHM_QUASI_MONTE_CARLO
-layout(binding = 11, scalar) readonly buffer HammersleySequence {
+layout(binding = BINDING_HAMMERSLEY, scalar) readonly buffer HammersleySequence {
   float[] hammersley;
 };
 #endif

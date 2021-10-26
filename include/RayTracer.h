@@ -19,6 +19,22 @@ enum class SamplingAlgorithm
   PATH_TRACING, QUASI_MONTE_CARLO
 };
 
+enum class Bindings : uint32_t
+{
+  TLAS = 0,
+  TARGET_IMAGE = 1,
+  UNIFORMS = 2,
+  OBJECT_INFOS = 3,
+  INDICES = 4,
+  VERTICES = 5,
+  NORMALS = 6,
+  TEX_COORDS = 7,
+  TANGENTS = 8,
+  TEXTURES = 10,
+  HAMMERSLEY = 11,
+  ENV_MAP = 12
+};
+
 class RayTracer : public vsg::Inherit<vsg::Object, RayTracer>
 {
 public:
@@ -57,7 +73,7 @@ protected:
 
   vsg::ref_ptr<vsg::DescriptorAccelerationStructure> tlasDescriptor;
   vsg::ref_ptr<vsg::DescriptorImage> targetImageDescriptor;
-  vsg::ref_ptr<vsg::DescriptorBuffer> uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, lowDiscrepancySeqDescriptor;
+  vsg::ref_ptr<vsg::DescriptorBuffer> uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, hammersleyDescriptor;
   vsg::ref_ptr<vsg::DescriptorImage> textureDescriptor, envMapDescriptor;
   vsg::ref_ptr<vsg::DescriptorSet> descriptorSet;
   vsg::ref_ptr<vsg::PipelineLayout> pipelineLayout;
