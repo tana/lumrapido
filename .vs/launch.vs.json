@@ -9,9 +9,15 @@
       "name": "lumrapido.exe",
       "args": [
         "--debug",
+        "-a",
+        "qmc",
+        "-s",
+        "30",
         "-f",
         "60",
-        "../../../data/AlphaBlendModeTest.glb"
+        "-e",
+        "../../../data/studio_garden_2k.exr",
+        "../../../data/BoomBox.glb"
       ]
     }
   ]

@@ -38,29 +38,31 @@ float scrambledRadicalInverse(int num, int base, const std::vector<int>& perm)
   return result;
 }
 
-void generateScrambledHammersley(int numDims, int numSamples, vsg::ref_ptr<vsg::floatArray> arr)
+void generateScrambledHammersley(int numDims, int numSamples, int numReps, vsg::ref_ptr<vsg::floatArray> arr)
 {
   // Initialize RNG for permutation generation
   std::mt19937 rng(12345);  // Seed is fixed
 
-  std::vector<std::vector<int>> permutations; // Permutations for each base
-  // Generate permutations for scrambling
-  for (size_t i = 0; i < size_t(numDims) - 1; ++i) {
-    int base = PRIMES[i];
-    std::vector<int> perm(base);
-    std::iota(perm.begin(), perm.end(), 0); // Generate numbers from 0 to base-1
+  for (size_t rep = 0; rep < size_t(numReps); ++rep) {
+    std::vector<std::vector<int>> permutations; // Permutations for each base
+    // Generate permutations for scrambling
+    for (size_t i = 0; i < size_t(numDims) - 1; ++i) {
+      int base = PRIMES[i];
+      std::vector<int> perm(base);
+      std::iota(perm.begin(), perm.end(), 0); // Generate numbers from 0 to base-1
 
-    std::shuffle(perm.begin(), perm.end(), rng);  // Shuffle
+      std::shuffle(perm.begin(), perm.end(), rng);  // Shuffle
 
-    permutations.emplace_back(perm);
-  }
+      permutations.emplace_back(perm);
+    }
 
-  for (size_t i = 0; i < numSamples; ++i) {
-    // First dimension of a Hammersley point is calculated by special formula
-    arr->at(size_t(numDims) * i) = float(i) / numSamples;
-    // Other dimensions are calculated by (scrambled) radical inverse
-    for (size_t j = 1; j < numDims; ++j) {
-      arr->at(numDims * i + j) = scrambledRadicalInverse(int(i), PRIMES[j - 1], permutations[j - 1]);
+    for (size_t i = 0; i < numSamples; ++i) {
+      // First dimension of a Hammersley point is calculated by special formula
+      arr->at((numSamples * numDims) * rep + numDims * i) = float(i) / numSamples;
+      // Other dimensions are calculated by (scrambled) radical inverse
+      for (size_t j = 1; j < numDims; ++j) {
+        arr->at((numSamples * numDims) * rep + numDims * i + j) = scrambledRadicalInverse(int(i), PRIMES[j - 1], permutations[j - 1]);
+      }
     }
   }
 }

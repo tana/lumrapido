@@ -165,9 +165,9 @@ void RayTracer::setSamplesPerPixel(int samplesPerPixel)
 
   if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
     // Generate low-discrepancy sequence for specified number of samples
-    int numElems = SAMPLING_DIMENSIONS * samplesPerPixel;
+    int numElems = HAMMERSLEY_REPLICATIONS * SAMPLING_DIMENSIONS * samplesPerPixel;
     hammersley->assign(numElems, (float*)malloc(numElems * sizeof(float)));
-    generateScrambledHammersley(SAMPLING_DIMENSIONS, samplesPerPixel, hammersley);  // Fill data
+    generateScrambledHammersley(SAMPLING_DIMENSIONS, samplesPerPixel, HAMMERSLEY_REPLICATIONS, hammersley);  // Fill data
   }
 }
 

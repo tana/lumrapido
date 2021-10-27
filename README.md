@@ -46,7 +46,7 @@ lumrapido [OPTIONS] GLTF_FILE
 - `-H HEIGHT`: Set window height.
 - `-a ALGORITHM`: Choose sampling algorithm to use. Supported algorithms are:
   - `pt` Vanilla path tracing (default).
-  - `qmc` Quasi-Monte Carlo algorithm using Hammersley sequence.
+  - `qmc` Quasi-Monte Carlo algorithm using Hammersley sequence (:warning: **buggy**).
 - `--debug`: Enable Vulkan validation layer (for debugging).
 
 

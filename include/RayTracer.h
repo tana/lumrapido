@@ -53,6 +53,7 @@ public:
 
   const int MAX_DEPTH = 10;
   const int SAMPLING_DIMENSIONS = 2 + 3 * MAX_DEPTH;  // 2 for antialiasing, 3 per each depth of ray tracing
+  const int HAMMERSLEY_REPLICATIONS = 71; // This must agree with the definition in shader rayGeneration.rgen
 
 protected:
   vsg::Device* device;
