@@ -143,7 +143,7 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
   // Create descriptor for environment map
   envMapDescriptor = vsg::DescriptorImage::create(
     vsg::Sampler::create(),
-    scene->envMap,
+    scene->getEnvMap(),
     static_cast<uint32_t>(Bindings::ENV_MAP), 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
   // Combine descriptor into a descriptor set

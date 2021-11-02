@@ -146,10 +146,10 @@ int main(int argc, char* argv[])
       return -1;
     }
     
-    scene->envMap = envMap;
+    scene->setEnvMap(envMap);
   } else {
     // Use default environment map (1x1 px and value is 1.0)
-    scene->envMap = vsg::vec3Array2D::create(1, 1, vsg::vec3(1.0f, 1.0f, 1.0f), vsg::Data::Layout{ VK_FORMAT_R32G32B32_SFLOAT });
+    scene->setEnvMap(vsg::vec4Array2D::create(1, 1, vsg::vec4(1.0f, 1.0f, 1.0f, 1.0f), vsg::Data::Layout{ VK_FORMAT_R32G32B32A32_SFLOAT }));
   }
 
   auto rayTracer = RayTracer::create(device, screenWidth, screenHeight, scene, algorithm);

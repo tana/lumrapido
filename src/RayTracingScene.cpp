@@ -114,3 +114,15 @@ vsg::ref_ptr<vsg::vec4Array> RayTracingScene::getTangents() const
 {
   return concatArray(tangentsList);
 }
+
+vsg::ref_ptr<vsg::vec4Array2D> RayTracingScene::getEnvMap() const
+{
+  return envMap;
+}
+
+void RayTracingScene::setEnvMap(vsg::ref_ptr<vsg::vec4Array2D> envMap)
+{
+  this->envMap = envMap;
+
+  envMapSamplingData = EnvMapSamplingData::create(envMap);
+}

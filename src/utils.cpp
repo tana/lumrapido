@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <vsg/core/Array2D.h>
 #include <vsg/maths/transform.h>
 #define TINYEXR_IMPLEMENTATION
@@ -68,7 +69,7 @@ vsg::ref_ptr<vsg::Node> createQuad(vsg::vec3 center, vsg::vec3 normal, vsg::vec3
   return builder->createQuad(geomInfo);
 }
 
-vsg::ref_ptr<vsg::Data> loadEXRTexture(const std::string& path)
+vsg::ref_ptr<vsg::vec4Array2D> loadEXRTexture(const std::string& path)
 {
   float* data;
   int width, height;

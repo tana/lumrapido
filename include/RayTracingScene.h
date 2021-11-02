@@ -7,6 +7,7 @@
 #include <vsg/core/Data.h>
 #include <vsg/state/ImageInfo.h>
 #include "RayTracingMaterial.h"
+#include "EnvMapSamplingData.h"
 
 struct ObjectInfo
 {
@@ -39,11 +40,14 @@ public:
   vsg::ref_ptr<vsg::vec2Array> getTexCoords() const;
   vsg::ref_ptr<vsg::vec4Array> getTangents() const;
 
+  vsg::ref_ptr<vsg::vec4Array2D> getEnvMap() const;
+  void setEnvMap(vsg::ref_ptr<vsg::vec4Array2D> envMap);
+
   vsg::ref_ptr<vsg::TopLevelAccelerationStructure> tlas;
 
   vsg::ImageInfoList textures;
-
-  vsg::ref_ptr<vsg::Data> envMap;
+  
+  vsg::ref_ptr<EnvMapSamplingData> envMapSamplingData;
 
 private:
   vsg::Device* device;
@@ -54,6 +58,8 @@ private:
   std::vector<vsg::ref_ptr<vsg::vec3Array>> normalsList;
   std::vector<vsg::ref_ptr<vsg::vec2Array>> texCoordsList;
   std::vector<vsg::ref_ptr<vsg::vec4Array>> tangentsList;
+
+  vsg::ref_ptr<vsg::vec4Array2D> envMap;
 
   uint32_t numIndices;
   uint32_t numVertices;
