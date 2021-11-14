@@ -135,7 +135,7 @@ void main()
 
   // Calculate bitangent
   // It assumes w of all tangents in one triangle are the same.
-  // (See 3.7.2.1 in glTF 2.0 Specification https://www.pbr-book.org/3ed-2018/contents)
+  // (See 3.7.2.1 in glTF 2.0 Specification https://www.khronos.org/registry/glTF/specs/2.0/glTF-2.0.html#meshes-overview )
   vec3 bitangent = cross(normal, tangent) * tangent0.w;
 
   // Calculate base color
