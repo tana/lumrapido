@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <numeric>
 #include <vector>
+#include "utils.h"
 
 EnvMapSamplingData::EnvMapSamplingData(vsg::ref_ptr<vsg::vec4Array2D> envMap)
 {
@@ -58,23 +59,28 @@ vsg::ref_ptr<vsg::floatArray2D> EnvMapSamplingData::generatePDF(vsg::ref_ptr<vsg
 
   auto pdf = vsg::floatArray2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32_SFLOAT });
 
-  // Calculate relative luminance of each pixels
-  float luminanceSum = 0.0;  // Sum of luminance for normalization
+  float sum = 0.0;  // Sum of pixel values for normalization
   for (uint32_t i = 0; i < height; ++i) {
+    float theta = PI * float(i) / float(height);
+
     for (uint32_t j = 0; j < width; ++j) {
       // vsg::Array2D#at function uses at(column, row) order
       const vsg::vec4& color = envMap->at(j, i);
       // Calculate relative luminance from linear RGB
       // See: https://en.wikipedia.org/w/index.php?title=Relative_luminance&oldid=1051312528
-      pdf->at(j, i) = 0.2126f * color.r + 0.7152f * color.g + 0.0722f * color.b;
-      luminanceSum += pdf->at(j, i);
+      float luminance = 0.2126f * color.r + 0.7152f * color.g + 0.0722f * color.b;
+
+      // Multiply sin(ƒÆ) for better sampling
+      // Small value is added to avoid division by zero
+      pdf->at(j, i) = luminance * sin(theta) + 10e-5;
+      sum += pdf->at(j, i);
     }
   }
 
-  // Normalize relative luminance to make probability distribution function (PDF)
+  // Normalize values of array to make probability distribution function (PDF)
   for (uint32_t i = 0; i < height; ++i) {
     for (uint32_t j = 0; j < width; ++j) {
-      pdf->at(j, i) /= luminanceSum;
+      pdf->at(j, i) /= sum;
     }
   }
 

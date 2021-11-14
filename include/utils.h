@@ -7,6 +7,8 @@
 #include <vsg/core/Array.h>
 #include <vsg/core/Array2D.h>
 
+const float PI = 3.14159265359;
+
 vsg::ref_ptr<vsg::Node> createSphere(vsg::vec3 center, float radius);
 vsg::ref_ptr<vsg::Node> createQuad(vsg::vec3 center, vsg::vec3 normal, vsg::vec3 up, float width, float height);
 
