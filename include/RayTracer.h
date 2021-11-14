@@ -32,7 +32,10 @@ enum class Bindings : uint32_t
   TANGENTS = 8,
   TEXTURES = 10,
   HAMMERSLEY = 11,
-  ENV_MAP = 12
+  ENV_MAP = 12,
+  ENV_MAP_PDF = 13,
+  ENV_MAP_MARGINAL_CDF = 14,
+  ENV_MAP_CONDITIONAL_CDF = 15
 };
 
 class RayTracer : public vsg::Inherit<vsg::Object, RayTracer>
@@ -76,6 +79,7 @@ protected:
   vsg::ref_ptr<vsg::DescriptorImage> targetImageDescriptor;
   vsg::ref_ptr<vsg::DescriptorBuffer> uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, hammersleyDescriptor;
   vsg::ref_ptr<vsg::DescriptorImage> textureDescriptor, envMapDescriptor;
+  vsg::ref_ptr<vsg::DescriptorImage> envMapPDFDescriptor, envMapMarginalCDFDescriptor, envMapConditionalCDFDescriptor;
   vsg::ref_ptr<vsg::DescriptorSet> descriptorSet;
   vsg::ref_ptr<vsg::PipelineLayout> pipelineLayout;
   vsg::ref_ptr<vsg::RayTracingPipeline> rayTracingPipeline;

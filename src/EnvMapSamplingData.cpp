@@ -35,7 +35,7 @@ EnvMapSamplingData::EnvMapSamplingData(vsg::ref_ptr<vsg::vec4Array2D> envMap)
   }
 
   // Copy CDF of conditional distributions into a vsg::float2DArray
-  conditionalCDF = vsg::floatArray2D::create(width, height);
+  conditionalCDF = vsg::floatArray2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32_SFLOAT });
   for (uint32_t i = 0; i < height; ++i) {
     for (uint32_t j = 0; j < width; ++j) {
       conditionalCDF->at(j, i) = conditionalCDFVec[i][j];
@@ -47,7 +47,7 @@ EnvMapSamplingData::EnvMapSamplingData(vsg::ref_ptr<vsg::vec4Array2D> envMap)
   // Generate CDF for the marginal distribution
   std::vector<float> marginalCDFVec = generateCDF1D(marginalPDF);
   // Copy CDF of the marginal distribution into a vsg::floatArray
-  marginalCDF = vsg::floatArray::create(height);
+  marginalCDF = vsg::floatArray::create(height, vsg::Data::Layout{ VK_FORMAT_R32_SFLOAT });
   std::copy(marginalCDFVec.begin(), marginalCDFVec.end(), marginalCDF->begin());
 }
 
@@ -56,7 +56,7 @@ vsg::ref_ptr<vsg::floatArray2D> EnvMapSamplingData::generatePDF(vsg::ref_ptr<vsg
   uint32_t height = envMap->height();
   uint32_t width = envMap->width();
 
-  auto pdf = vsg::floatArray2D::create(width, height);
+  auto pdf = vsg::floatArray2D::create(width, height, vsg::Data::Layout{ VK_FORMAT_R32_SFLOAT });
 
   // Calculate relative luminance of each pixels
   float luminanceSum = 0.0;  // Sum of luminance for normalization

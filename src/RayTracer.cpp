@@ -101,7 +101,13 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
     // Textures
     { static_cast<uint32_t>(Bindings::TEXTURES), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, uint32_t(MAX_NUM_TEXTURES), VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
     // Environment map
-    { static_cast<uint32_t>(Bindings::ENV_MAP), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_MISS_BIT_KHR, nullptr }
+    { static_cast<uint32_t>(Bindings::ENV_MAP), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_MISS_BIT_KHR, nullptr },
+    // PDF for environment map sampling
+    { static_cast<uint32_t>(Bindings::ENV_MAP_PDF), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // CDF of marginal distribution for environment map sampling
+    { static_cast<uint32_t>(Bindings::ENV_MAP_MARGINAL_CDF), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr },
+    // CDFs of conditional distribution for environment map sampling
+    { static_cast<uint32_t>(Bindings::ENV_MAP_CONDITIONAL_CDF), VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, nullptr }
   };
   // If algorithm is QMC, add binding for hammersley sequence
   if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
@@ -146,8 +152,26 @@ RayTracer::RayTracer(vsg::Device* device, int width, int height, vsg::ref_ptr<Ra
     scene->getEnvMap(),
     static_cast<uint32_t>(Bindings::ENV_MAP), 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
 
+  // Prepare image for data needed in envmap sampling
+  auto pdfImage = vsg::Image::create(scene->envMapSamplingData->pdf);
+  pdfImage->usage = VK_IMAGE_USAGE_STORAGE_BIT;
+  auto marginalCDFImage = vsg::Image::create(scene->envMapSamplingData->marginalCDF);
+  marginalCDFImage->usage = VK_IMAGE_USAGE_STORAGE_BIT;
+  auto conditionalCDFImage = vsg::Image::create(scene->envMapSamplingData->conditionalCDF);
+  conditionalCDFImage->usage = VK_IMAGE_USAGE_STORAGE_BIT;
+  // Create descriptors for environment map sampling
+  envMapPDFDescriptor = vsg::DescriptorImage::create(
+    vsg::ImageInfo(nullptr, vsg::createImageView(device, pdfImage, VK_IMAGE_ASPECT_COLOR_BIT), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+    static_cast<uint32_t>(Bindings::ENV_MAP_PDF), 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+  envMapMarginalCDFDescriptor = vsg::DescriptorImage::create(
+    vsg::ImageInfo(nullptr, vsg::createImageView(device, marginalCDFImage, VK_IMAGE_ASPECT_COLOR_BIT), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+    static_cast<uint32_t>(Bindings::ENV_MAP_MARGINAL_CDF), 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+  envMapConditionalCDFDescriptor = vsg::DescriptorImage::create(
+    vsg::ImageInfo(nullptr, vsg::createImageView(device, conditionalCDFImage, VK_IMAGE_ASPECT_COLOR_BIT), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
+    static_cast<uint32_t>(Bindings::ENV_MAP_CONDITIONAL_CDF), 0, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+
   // Combine descriptor into a descriptor set
-  vsg::Descriptors descriptors = { tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, textureDescriptor, envMapDescriptor };
+  vsg::Descriptors descriptors = { tlasDescriptor, targetImageDescriptor, uniformDescriptor, objectInfoDescriptor, indicesDescriptor, verticesDescriptor, normalsDescriptor, texCoordsDescriptor, tangentsDescriptor, textureDescriptor, envMapDescriptor, envMapPDFDescriptor, envMapMarginalCDFDescriptor, envMapConditionalCDFDescriptor};
   if (algorithm == SamplingAlgorithm::QUASI_MONTE_CARLO) {
     descriptors.push_back(hammersleyDescriptor);
   }

@@ -36,6 +36,10 @@ layout(binding = BINDING_TANGENTS, scalar) readonly buffer Tangents {
 
 layout(binding = BINDING_TEXTURES) uniform sampler2D textures[MAX_NUM_TEXTURES];
 
+layout(binding = BINDING_ENV_MAP_PDF, r32f) readonly uniform image2D envMapPDF;
+layout(binding = BINDING_ENV_MAP_MARGINAL_CDF, r32f) readonly uniform image1D envMapMarginalCDF;
+layout(binding = BINDING_ENV_MAP_CONDITIONAL_CDF, r32f) readonly uniform image2D envMapConditionalCDF;
+
 layout(location = 0) rayPayloadInEXT RayPayload payload;
 
 hitAttributeEXT vec2 uv;  // Barycentric coordinate of the hit position inside a triangle
@@ -45,6 +49,16 @@ hitAttributeEXT vec2 uv;  // Barycentric coordinate of the hit position inside a
 vec3 fresnelSchlick(in float cosTheta, in vec3 f0)
 {
   return f0 + (1 - f0) * pow(1 - cosTheta, 5);
+}
+
+// GGX/Trowbridge-Reitz normal distribution function D(h)
+float normalDistGGX(in vec3 halfwayVec, in vec3 normal, float roughness)
+{
+  float alpha = roughness * roughness;
+  float alphaSq = alpha * alpha;
+  float dotNH = dot(normal, halfwayVec);
+  float ggxTemp = dotNH * dotNH * (alphaSq - 1.0) + 1.0;
+  return alphaSq / (PI * ggxTemp * ggxTemp);
 }
 
 // Sample a halfway vector from GGX/Trowbridge-Reitz normal distribution
@@ -91,6 +105,84 @@ vec3 sampleHemisphereCosine(in float rand1, in float rand2, in vec3 viewVec, in 
   vec3 binormal = cross(tangent, normal);
   float sinTheta = sin(theta);  // Avoid calculating sin(theta) twice
   return tangent * (sinTheta * cos(phi)) + normal * cos(theta) + binormal * (sinTheta * sin(phi));
+}
+
+// Sample from distribution specified by image1D CDF
+// rand is a [0,1) uniform random number
+// Because images need layout(format) and it cannot be specified in parameters, image variables are hard-coded.
+// (See https://github.com/KhronosGroup/GLSL/issues/57 )
+float sampleMarginalCDF1D(float rand)
+{
+  // Binary search
+  int start = 0;
+  int end = imageSize(envMapMarginalCDF);
+  while (start < end) {
+    int i = start + (end - start) / 2;
+    if (rand < imageLoad(envMapMarginalCDF, i).r) {
+      end = i;
+    } else {
+      start = i + 1;
+    }
+  }
+  // end becomes the maximum i where rand < cdf[i]
+
+  // Linear interpolation
+  float cdfPrev = (end > 0) ? imageLoad(envMapMarginalCDF, end - 1).r : 0.0;  // cdf[-1] is treated as 0
+  float cdfValue = imageLoad(envMapMarginalCDF, end).r;
+  return end + (rand - cdfPrev) / (cdfValue - cdfPrev);
+}
+
+// Sample from distribution whose CDF is specified by a row of image2D
+// rand is a [0,1) uniform random number
+// (image variables are hard-coded because of the problem same as sampleMarginalCDF1D)
+float sampleConditionalCDFRow(float rand, int row)
+{
+  // Binary search
+  int start = 0;
+  int end = imageSize(envMapConditionalCDF).x;
+  while (start < end) {
+    int i = start + (end - start) / 2;
+    if (rand < imageLoad(envMapConditionalCDF, ivec2(i, row)).r) {
+      end = i;
+    } else {
+      start = i + 1;
+    }
+  }
+  // end becomes the maximum i where rand < cdf[i]
+
+  // Linear interpolation
+  float cdfPrev = (end > 0) ? imageLoad(envMapConditionalCDF, ivec2(end - 1, row)).r : 0.0;  // cdf[-1] is treated as 0
+  float cdfValue = imageLoad(envMapConditionalCDF, ivec2(end, row)).r;
+  return end + (rand - cdfPrev) / (cdfValue - cdfPrev);
+}
+
+// Importance sampling of an environment map
+// It also returns probability density as an out argument
+// Reference:
+//  Project 3-2, Part 3: Environment Map Lights https://cs184.eecs.berkeley.edu/sp18/article/25
+//  M. Phare and G. Humphreys, "Monte Carlo Rendering with Natural Illumination," in University of Virginia Dept. of Computer Science Tech Report, 2004. https://doi.org/10.18130/V3C484
+// (image variables are hard-coded because of the problem same as sampleMarginalCDF1D and sampleConditionalCDFRow)
+vec3 sampleEnvMap(float rand1, float rand2, out float p)
+{
+  // Sample vertical position u from marginal distribution p(u)
+  float u = sampleMarginalCDF1D(rand1);
+  // Sample horizontal position v from conditional distribution p(v|u)
+  float v = sampleConditionalCDFRow(rand2, int(floor(u)));
+
+  ivec2 size = imageSize(envMapPDF);
+
+  // Convert texture coordinate (u,v) to direction (É∆,É”)
+  float theta = PI * u / size.y;
+  float phi = 2.0 * PI * v / size.x;
+
+  // Convert spherical coordinate to Cartesian (y-up)
+  float sinTheta = sin(theta);
+  vec3 lightVec = vec3(sinTheta * cos(phi), cos(theta), sinTheta * sin(phi));
+  
+  // Conversion between p(u,v) and p(É÷)
+  p = imageLoad(envMapPDF, ivec2(floor(vec2(v, u)))).r * size.y * size.x / (2.0 * PI * PI * sinTheta);
+
+  return lightVec;
 }
 
 void main()
@@ -203,6 +295,7 @@ void main()
   vec3 viewVec = -unitRayDir;
   float dotNV = dot(normal, viewVec);
 
+  /*
   // Probability of sampling specular reflection
   float specularProb = mix(0.3, 1.0, metallic);
 
@@ -235,6 +328,34 @@ void main()
     // ((1 - metallic) * (color / PI) * dotNV) / (dotNV / PI) / (1 - specularProb)
     payload.multiplier *=  (1 - metallic) * color / (1 - specularProb);
   }
+  */
+
+  float prob;
+  // Sample light vector from environmental map
+  lightVec = sampleEnvMap(payload.random[1], payload.random[2], prob);
+  // Calculate halfway vector from light vector
+  vec3 halfwayVec = normalize(viewVec + lightVec);
+
+  float dotNL = dot(lightVec, normal);
+
+  if (dotNL <= 0.0 || dot(lightVec, halfwayVec) <= 0.0) { // Not reflecting
+    payload.multiplier = vec3(0.0);
+    payload.traceNextRay = false;
+    return;
+  }
+
+  // Fresnel factor F(v,h)
+  vec3 f0 = mix(vec3(0.04), color, metallic);
+  vec3 fresnel = fresnelSchlick(dot(viewVec, halfwayVec), f0);
+  // Normal distribution term D(h)
+  float normalDist = normalDistGGX(halfwayVec, normal, roughness);
+  // Geometric attenuation term G(l,v,h)
+  float geometricAttenuation = geometricAttenuationSchlick(lightVec, viewVec, normal, roughness);
+
+  vec3 specularBRDF = fresnel * normalDist * geometricAttenuation / (4 * dotNV * dotNL);
+  vec3 brdf = (1 - metallic) * color + specularBRDF;
+
+  payload.multiplier *= brdf * dotNL / prob;
 
   // Trace next ray
   payload.nextOrigin = hitPoint;
