@@ -97,7 +97,7 @@ void main()
   }
 
   // Gamma correction
-  vec3 correctedColor = sqrt(meanColor);
+  vec3 correctedColor = pow(meanColor, vec3(1.0 / 2.2));
 
   imageStore(targetImage, ivec2(gl_LaunchIDEXT.xy), vec4(correctedColor, 1.0));
 }
